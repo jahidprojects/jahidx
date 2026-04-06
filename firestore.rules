@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId} (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required) - Firebase Auth UID
+    //   - username: string (required, < 50 chars) - User's display name
+    //   - avatar: string (required, < 500 chars) - URL to profile image
+    //   - balance: number (required, >= 0) - TON balance
+    //   - wins: number (required, >= 0) - Total wins
+    //   - volume: number (required, >= 0) - Total volume
+    //   - completedTasks: list of strings (required, < 100 items) - Task IDs
+    //   - referralCode: string (optional, < 20 chars) - Referral code
+    //   - referredBy: string (optional, < 50 chars) - UID of referrer
+    //
+    // Collection: games
+    // Document ID: {gameId}
+    // Fields:
+    //   - id: string (required)
+    //   - players: list of objects (required, < 50 items) - Player data
+    //   - totalPot: number (required, >= 0) - Total pot
+    //   - winner: map (optional) - Winner data
+    //   - status: string (required, ['waiting', 'drawing', 'winner'])
+    //   - createdAt: timestamp (required)
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "jahidproject8@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'username', 'avatar', 'balance', 'wins', 'volume', 'completedTasks']) &&
+             data.uid == request.auth.uid &&
+             data.username is string && data.username.size() > 0 && data.username.size() < 50 &&
+             data.avatar is string && data.avatar.size() < 500 &&
+             data.balance is number && data.balance >= 0 &&
+             data.wins is number && data.wins >= 0 &&
+             data.volume is number && data.volume >= 0 &&
+             data.completedTasks is list && data.completedTasks.size() < 100;
+    }
+
+    function isValidGame(data) {
+      return data.keys().hasAll(['id', 'players', 'totalPot', 'status', 'createdAt']) &&
+             data.id is string &&
+             data.players is list && data.players.size() < 50 &&
+             data.totalPot is number && data.totalPot >= 0 &&
+             data.status in ['waiting', 'drawing', 'winner'] &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated(); // Allow reading other users for leaderboard
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.uid == resource.data.uid; // UID immutable
+    }
+
+    match /games/{gameId} {
+      allow read: if true; // Publicly readable for live game
+      allow create, update: if isAuthenticated(); // For simplicity in this demo, allow authenticated users to update game state.
+      // In a real production app, this would be handled by a secure backend/cloud function.
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

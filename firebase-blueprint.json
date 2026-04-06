@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user balance, wins, and other profile data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID from Firebase Auth." },
+        "username": { "type": "string", "description": "User's display name or Telegram handle." },
+        "avatar": { "type": "string", "description": "URL to the user's profile image." },
+        "balance": { "type": "number", "description": "User's current TON balance." },
+        "wins": { "type": "integer", "description": "Total number of games won." },
+        "volume": { "type": "number", "description": "Total TON volume wagered." },
+        "completedTasks": { "type": "array", "items": { "type": "string" }, "description": "List of IDs for completed tasks." },
+        "referralCode": { "type": "string", "description": "Unique referral code for the user." },
+        "referredBy": { "type": "string", "description": "UID of the user who referred this user." }
+      },
+      "required": ["uid", "username", "balance"]
+    },
+    "Game": {
+      "title": "Game Session",
+      "description": "Stores current or past game session data.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "players": { "type": "array", "description": "List of player objects in the current game." },
+        "totalPot": { "type": "number" },
+        "winner": { "type": "object", "description": "The winning player object." },
+        "status": { "type": "string", "enum": ["waiting", "drawing", "winner"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "players", "totalPot", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/games/{gameId}": {
+      "schema": "Game",
+      "description": "Game session documents."
+    }
+  }
+}
