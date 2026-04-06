@@ -460,6 +460,12 @@ const App = () => {
   const [isGameLoaded, setIsGameLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoadingStarted, setIsLoadingStarted] = useState(false);
+  const [hasPlayedBefore, setHasPlayedBefore] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('giftphase_played') === 'true';
+    }
+    return false;
+  });
 
   const [tonConnectUI] = useTonConnectUI();
   const userAddress = useTonAddress();
@@ -593,19 +599,12 @@ const App = () => {
       WebApp.setHeaderColor('#0d0d0d');
       WebApp.setBackgroundColor('#0d0d0d');
       
-      // Main Button for Arena
-      if (activeTab === 'arena' && status === 'waiting') {
-        WebApp.MainButton.setText('PLACE BID (1 TON)');
-        WebApp.MainButton.show();
-        WebApp.MainButton.onClick(() => addBid(1, true));
-      } else {
-        WebApp.MainButton.hide();
+      // Auto-start loading if played before
+      if (hasPlayedBefore && !isLoadingStarted) {
+        startLoading();
       }
     }
-    return () => {
-      WebApp.MainButton.offClick(() => addBid(1, true));
-    };
-  }, [activeTab, status]);
+  }, [hasPlayedBefore]);
 
   useEffect(() => {
     localStorage.setItem('hegmo_balance', myBalance.toString());
@@ -1001,6 +1000,7 @@ const App = () => {
   };
 
   const startLoading = () => {
+    if (isLoadingStarted) return;
     setIsLoadingStarted(true);
     let currentProgress = 0;
     const interval = setInterval(() => {
@@ -1008,7 +1008,11 @@ const App = () => {
       if (currentProgress >= 100) {
         setLoadingProgress(100);
         clearInterval(interval);
-        setTimeout(() => setIsGameLoaded(true), 500);
+        setTimeout(() => {
+          setIsGameLoaded(true);
+          localStorage.setItem('giftphase_played', 'true');
+          setHasPlayedBefore(true);
+        }, 500);
       } else {
         setLoadingProgress(currentProgress);
       }
@@ -1244,24 +1248,26 @@ const App = () => {
       `}</style>
       <SparkleBackground />
       <div className="flex-1 flex flex-col h-full overflow-hidden touch-pan-y relative z-10">
-        {activeTab === 'arena' && renderArena()}
-        {activeTab === 'tasks' && renderTaskCenter()}
-        {activeTab === 'profile' && renderProfile()}
-        {activeTab === 'rank' && renderRank()}
-        {activeTab === 'market' && <div className="flex-1 flex items-center justify-center text-[#444] font-black uppercase tracking-widest relative z-10">{t.comingSoon}</div>}
+        {isGameLoaded && activeTab === 'arena' && renderArena()}
+        {isGameLoaded && activeTab === 'tasks' && renderTaskCenter()}
+        {isGameLoaded && activeTab === 'profile' && renderProfile()}
+        {isGameLoaded && activeTab === 'rank' && renderRank()}
+        {isGameLoaded && activeTab === 'market' && <div className="flex-1 flex items-center justify-center text-[#444] font-black uppercase tracking-widest relative z-10">{t.comingSoon}</div>}
       </div>
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-black/85 backdrop-blur-3xl border-t border-white/5 z-[100] pb-9 flex justify-around items-center font-sans h-24">
-        <div onClick={() => setActiveTab('market')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'market' ? 'text-[#3498db] scale-110' : 'text-[#5d666d]'}`}><Store size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.shop}</span></div>
-        <div onClick={() => setActiveTab('arena')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'arena' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Gamepad2 size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.arena}</span></div>
-        <div onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'tasks' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><ClipboardList size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.tasks}</span></div>
-        <div onClick={() => setActiveTab('rank')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'rank' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Trophy size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.rank}</span></div>
-        <div onClick={() => setActiveTab('profile')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'profile' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}>
-          <div className={`w-[34px] h-[34px] rounded-full overflow-hidden border-[2px] transition-all shadow-sm aspect-square flex items-center justify-center ${activeTab === 'profile' ? 'border-[#2563EB] grayscale-0' : 'border-white/10 grayscale opacity-50'}`}>
-            <img src={user?.photoURL || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop"} alt="Me" className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
+      {isGameLoaded && (
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-black/85 backdrop-blur-3xl border-t border-white/5 z-[100] pb-9 flex justify-around items-center font-sans h-24">
+          <div onClick={() => setActiveTab('market')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'market' ? 'text-[#3498db] scale-110' : 'text-[#5d666d]'}`}><Store size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.shop}</span></div>
+          <div onClick={() => setActiveTab('arena')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'arena' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Gamepad2 size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.arena}</span></div>
+          <div onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'tasks' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><ClipboardList size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.tasks}</span></div>
+          <div onClick={() => setActiveTab('rank')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'rank' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Trophy size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.rank}</span></div>
+          <div onClick={() => setActiveTab('profile')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'profile' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}>
+            <div className={`w-[38px] h-[38px] rounded-full overflow-hidden border-[2px] transition-all shadow-sm aspect-square flex items-center justify-center ${activeTab === 'profile' ? 'border-[#2563EB] grayscale-0' : 'border-white/10 grayscale opacity-50'}`}>
+              <img src={user?.photoURL || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop"} alt="Me" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            </div>
+            <span className="text-[11px] font-bold uppercase font-sans">{t.profile}</span>
           </div>
-          <span className="text-[11px] font-bold uppercase font-sans">{t.profile}</span>
         </div>
-      </div>
+      )}
       {activeTab === 'arena' && status === 'winner' && persistentWinner && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center animate-in fade-in duration-500">
            <div className="absolute inset-0 backdrop-blur-2xl transition-all duration-1000" style={{ background: `radial-gradient(circle at center, rgba(37, 99, 235, 0.4), rgba(79, 70, 229, 0.3), rgba(0, 0, 0, 0.6))` }} onClick={() => resetGame()}></div>
