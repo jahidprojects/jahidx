@@ -445,6 +445,7 @@ const App = () => {
   const [winner, setWinner] = useState(null);
   const [persistentWinner, setPersistentWinner] = useState(null);
   const [myBalance, setMyBalance] = useState(0);
+  const [puckBalance, setPuckBalance] = useState(0);
   const [popupTimeLeft, setPopupTimeLeft] = useState(5);
   const [completedTaskIds, setCompletedTaskIds] = useState([]);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -484,6 +485,7 @@ const App = () => {
           if (userSnap.exists()) {
             const userData = userSnap.data();
             setMyBalance(userData.balance || 0);
+            setPuckBalance(userData.puckBalance || 0);
             setCompletedTaskIds(userData.completedTasks || []);
             
             // Sync TG name if changed
@@ -501,6 +503,7 @@ const App = () => {
               username: tgUser ? `@${tgUser.username || tgUser.first_name}` : `User_${firebaseUser.uid.slice(0, 5)}`,
               avatar: tgUser?.photo_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop',
               balance: 10.0,
+              puckBalance: 100000,
               wins: 0,
               volume: 0,
               completedTasks: [],
@@ -598,6 +601,14 @@ const App = () => {
       WebApp.expand();
       WebApp.setHeaderColor('#0d0d0d');
       WebApp.setBackgroundColor('#0d0d0d');
+      
+      if (WebApp.isVersionAtLeast('8.0')) {
+        try {
+          WebApp.requestFullscreen();
+        } catch (e) {
+          console.log("Fullscreen request failed", e);
+        }
+      }
       
       // Auto-start loading if played before
       if (hasPlayedBefore && !isLoadingStarted) {
@@ -761,17 +772,19 @@ const App = () => {
   }, [timeLeft, status]);
 
   useEffect(() => {
-    if (status === 'waiting') {
+    if (status === 'waiting' && players.length >= 2) {
       const t = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(t);
-            if (players.length > 0) runDrawSequence(); else setTimeLeft(15);
+            runDrawSequence();
             return 0;
           } return prev - 1;
         });
       }, 1000);
       return () => clearInterval(t);
+    } else if (status === 'waiting') {
+      setTimeLeft(0);
     }
   }, [status, players.length]);
 
@@ -803,7 +816,7 @@ const App = () => {
 
   const shootPuck = (startPos, finalAngle) => {
     const rad = (finalAngle * Math.PI) / 180;
-    physicsRef.current = { ...physicsRef.current, x: startPos.x, y: startPos.y, vx: Math.sin(rad) * 7.2, vy: -Math.cos(rad) * 7.2, active: true };
+    physicsRef.current = { ...physicsRef.current, x: startPos.x, y: startPos.y, vx: Math.sin(rad) * 8.5, vy: -Math.cos(rad) * 8.5, friction: 0.984, active: true };
     const step = () => {
       if (!physicsRef.current.active) return;
       let { x, y, vx, vy, friction, bounce, radius } = physicsRef.current;
@@ -823,8 +836,35 @@ const App = () => {
         physicsRef.current.active = false; 
         const resWinner = area || players[0];
         setWinner(resWinner); 
-        setPersistentWinner({...resWinner, totalPrize: totalPot});
+        const winAmount = totalPot;
+        setPersistentWinner({...resWinner, totalPrize: winAmount});
         setStatus('winner'); 
+        
+        // Update Top/Recent Winners UI
+        setLastWinner({
+          username: resWinner.username,
+          avatar: resWinner.avatar,
+          winChance: ((resWinner.bet / totalPot) * 100).toFixed(1),
+          amount: winAmount.toFixed(2),
+          color: resWinner.color,
+          accentColor: resWinner.accentColor
+        });
+
+        setTopWinner(prev => {
+          const currentVal = winAmount;
+          const prevVal = parseFloat(prev.amount.replace(/[^\d.]/g, '')) || 0;
+          if (currentVal > prevVal) {
+            return {
+              username: resWinner.username,
+              avatar: resWinner.avatar,
+              winChance: ((resWinner.bet / totalPot) * 100).toFixed(1),
+              amount: winAmount.toFixed(2),
+              color: resWinner.color,
+              accentColor: resWinner.accentColor
+            };
+          }
+          return prev;
+        });
         
         // Sync to Firestore
         if (user) {
@@ -887,9 +927,7 @@ const App = () => {
     const tgUser = WebApp.initDataUnsafe?.user;
     const n = isMe ? (tgUser ? `@${tgUser.username || tgUser.first_name}` : 'User') : bot.name;
     const a = isMe ? (tgUser?.photo_url || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop') : bot.avatar;
-    const pal = PLAYER_PALETTE[players.length % PLAYER_PALETTE.length];
-    const newPlayer = { username: n, avatar: a, bet: finalAmt, color: pal.main, lightColor: pal.light, accentColor: pal.accent, isMe, id: Date.now() + Math.random() };
-
+    
     if (isMe) {
       setMyBalance(prev => Math.max(0, prev - finalAmt));
       if (user) {
@@ -906,22 +944,33 @@ const App = () => {
 
     try {
       const gameRef = doc(db, 'games', 'current');
-      await updateDoc(gameRef, {
-        players: arrayUnion(newPlayer),
-        totalPot: increment(finalAmt)
-      });
-    } catch (error) {
-      // If document doesn't exist, create it (simple logic for demo)
-      try {
-        await setDoc(doc(db, 'games', 'current'), {
-          players: [newPlayer],
-          totalPot: finalAmt,
-          status: 'waiting',
-          createdAt: serverTimestamp()
-        });
-      } catch (e) {
-        handleFirestoreError(e, OperationType.WRITE, 'games/current');
+      const gameSnap = await getDoc(gameRef);
+      let currentPlayers = [];
+      let currentPot = 0;
+      
+      if (gameSnap.exists()) {
+        const data = gameSnap.data();
+        currentPlayers = data.players || [];
+        currentPot = data.totalPot || 0;
       }
+
+      const existingIdx = currentPlayers.findIndex(p => p.username === n);
+      if (existingIdx > -1) {
+        currentPlayers[existingIdx].bet += finalAmt;
+      } else {
+        const pal = PLAYER_PALETTE[currentPlayers.length % PLAYER_PALETTE.length];
+        const newPlayer = { username: n, avatar: a, bet: finalAmt, color: pal.main, lightColor: pal.light, accentColor: pal.accent, isMe, id: Date.now() + Math.random() };
+        currentPlayers.push(newPlayer);
+      }
+
+      await setDoc(gameRef, {
+        players: currentPlayers,
+        totalPot: currentPot + finalAmt,
+        status: 'waiting',
+        createdAt: serverTimestamp()
+      }, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'games/current');
     }
   };
 
@@ -930,14 +979,13 @@ const App = () => {
     const task = [...DAILY_TASKS, ...ACHIEVEMENTS, ...PARTNER_TASKS].find(t => t.id === taskId);
     if (task) {
       const reward = parseFloat(task.reward.replace(/,/g, ''));
-      const rewardAmt = reward / 100000;
       setCompletedTaskIds(prev => [...prev, taskId]);
-      setMyBalance(prev => prev + rewardAmt);
+      setPuckBalance(prev => prev + reward);
       
       try {
         await updateDoc(doc(db, 'users', user.uid), {
           completedTasks: arrayUnion(taskId),
-          balance: increment(rewardAmt)
+          puckBalance: increment(reward)
         });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
@@ -1022,19 +1070,25 @@ const App = () => {
   const premium3DStyle = `bg-gradient-to-b from-white/15 to-white/5 border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.4)] transition-all duration-75`;
   const white3DStyle = `bg-white border-t border-white/50 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.4)] transition-all duration-75 text-black font-black`;
 
+  const formatCurrency = (val) => {
+    if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+    if (val >= 1000) return (val / 1000).toFixed(0) + 'k';
+    return val.toString();
+  };
+
   const renderArena = () => (
     <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar pb-40 relative font-sans overscroll-contain z-10 pt-12">
       <div className="flex justify-between items-center p-4 pt-6 gap-3 shrink-0">
-        <div className={`px-3 py-1.5 rounded-full flex-1 flex items-center justify-center gap-1.5 min-w-0 font-sans ${premium3DStyle}`}><span className="text-[14px]">🪙</span><span className="text-[11px] font-black uppercase">100,000 PUCK</span></div>
-        <div className="bg-black/40 px-3 py-1 rounded-full border border-white/5 flex items-center gap-2 shrink-0 font-sans"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div><span className="text-[11px] font-bold text-gray-300">117 online</span></div>
-        <div className={`px-3 py-1.5 rounded-full flex-1 flex items-center justify-center gap-1 min-w-0 font-sans ${premium3DStyle}`}><Zap size={13} className="text-cyan-400 fill-cyan-400" /><span className="text-[11px] font-black uppercase">{myBalance.toFixed(0)} TON</span></div>
+        <div className={`px-3 py-2.5 rounded-full flex-1 flex items-center justify-center gap-1.5 min-w-0 font-sans ${premium3DStyle}`}><span className="text-[14px]">🪙</span><span className="text-[14px] font-black uppercase">{formatCurrency(puckBalance)} PUCK</span></div>
+        <div className="bg-black/40 px-3 py-2 rounded-full border border-white/5 flex items-center gap-2 shrink-0 font-sans"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div><span className="text-[11px] font-bold text-gray-300">117 online</span></div>
+        <div className={`px-3 py-2.5 rounded-full flex-1 flex items-center justify-center gap-1 min-w-0 font-sans ${premium3DStyle}`}><span className="text-[14px]">💎</span><span className="text-[14px] font-black uppercase">{myBalance.toFixed(0)} TON</span></div>
       </div>
       <div className="px-4 grid grid-cols-2 gap-3 mb-5 mt-2 shrink-0">
         <div className={`rounded-2xl p-2.5 flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)]`} style={{ background: `linear-gradient(to bottom, ${topWinner.accentColor}, ${topWinner.color})` }}><div className="flex items-center gap-2 min-w-0"><img src={topWinner.avatar} className="w-6 h-6 rounded-full border border-white/10" referrerPolicy="no-referrer" /><div className="flex flex-col min-w-0"><span className="text-[7px] text-white/60 font-black uppercase">{t.topWin}</span><span className="text-[9px] font-bold text-white truncate">{topWinner.username}</span></div></div><div className="flex flex-col items-end shrink-0 ml-1"><span className="text-[9px] font-black text-white">{topWinner.amount} ∇</span><span className="text-[7px] font-bold text-white/50">{topWinner.winChance}%</span></div></div>
         <div className={`rounded-2xl p-2.5 flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)]`} style={{ background: `linear-gradient(to bottom, ${lastWinner.accentColor}, ${lastWinner.color})` }}><div className="flex items-center gap-2 min-w-0"><img src={lastWinner.avatar} className="w-6 h-6 rounded-full border border-white/10" referrerPolicy="no-referrer" /><div className="flex flex-col min-w-0"><span className="text-[7px] text-white/60 font-black uppercase">{t.lastWin}</span><span className="text-[9px] font-bold text-white truncate">{lastWinner.username}</span></div></div><div className="flex flex-col items-end shrink-0 ml-1"><span className="text-[9px] font-black text-white">{lastWinner.amount} ∇</span><span className="text-[7px] font-bold text-white/50">{lastWinner.winChance}%</span></div></div>
       </div>
       <div className="px-4 flex justify-between items-end mb-3 px-1 font-sans shrink-0"><div><span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t.totalPool}</span><div className="text-cyan-400 font-black text-2xl tracking-tighter">{totalPot.toFixed(2)} ∇</div></div><div className="text-right"><span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t.startingIn}</span><div className="font-mono text-2xl font-black">00:{timeLeft.toString().padStart(2, '0')}</div></div></div>
-      <div className="mx-4 relative group shrink-0"><div className="relative aspect-square rounded-[44px] overflow-hidden border-[6px] border-[#1a1a1a] bg-[#111] shadow-2xl mb-6">{players.length === 0 ? <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-black uppercase text-center px-10 italic">{t.waiting}</div> : (<div className={`absolute inset-0 transition-transform duration-[450ms] ease-out ${isZoomed ? 'scale-[2.8]' : 'scale-100'}`} style={{ transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%` }}><StaticBoard territories={territories} winner={winner} /></div>)}<div className={`absolute z-[60] w-14 h-14 transition-opacity duration-300 pointer-events-none flex flex-col items-center justify-center ${status === 'drawing' || status === 'winner' ? 'opacity-100' : 'opacity-0'}`} style={{ left: `${selectorPos.x}%`, top: `${selectorPos.y}%`, transform: 'translate(-50%, -50%)' }}>{status === 'drawing' && hoverInfo.name && (<div key={hoverInfo.name} className={`absolute bg-black/95 backdrop-blur-xl px-4 py-2 rounded-full border border-white/20 flex items-center gap-2.5 shadow-2xl animate-in slide-in-from-bottom-1 fade-in duration-150 transition-all ${selectorPos.y < 25 ? 'top-14 translate-y-2' : '-top-14 -translate-y-2'}`}><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: hoverInfo.color }}></div><span className="text-[13px] font-black uppercase tracking-widest text-white">{hoverInfo.name}</span></div>)}{isAiming && <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: `rotate(${selectorAngle}deg)` }}><ArrowUp size={34} className="text-white drop-shadow-[0_0_15px_white] -translate-y-9 animate-pulse" /></div>}<div className="w-full h-full bg-white/20 backdrop-blur-[3.5px] rounded-full border-[3.5px] border-white shadow-[0_0_30px_rgba(255,255,255,0.45)] relative flex items-center justify-center overflow-hidden"><div className="absolute w-full h-[1px] bg-white/40"></div><div className="absolute h-full w-[1px] bg-white/40"></div><div className="relative z-10 w-4 h-4 flex items-center justify-center"><div className="absolute w-4 h-[2.5px] bg-white shadow-[0_0_8px_white] text-transparent">.</div><div className="absolute h-4 w-[2.5px] bg-white shadow-[0_0_8px_white] text-transparent">.</div></div></div></div></div></div>
+      <div className="mx-4 relative group shrink-0"><div className="relative aspect-square rounded-[44px] overflow-hidden border-[6px] border-[#1a1a1a] bg-[#111] shadow-2xl mb-6">{players.length === 0 ? <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-black uppercase text-center px-10 italic">{t.waiting}</div> : (<div className={`absolute inset-0 transition-transform duration-[450ms] ease-out ${isZoomed ? 'scale-[2.8]' : 'scale-100'}`} style={{ transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%` }}><StaticBoard territories={territories} winner={winner} /></div>)}<div className={`absolute z-[60] w-14 h-14 transition-opacity duration-300 pointer-events-none flex flex-col items-center justify-center ${status === 'drawing' || status === 'winner' ? 'opacity-100' : 'opacity-0'}`} style={{ left: `${selectorPos.x}%`, top: `${selectorPos.y}%`, transform: 'translate(-50%, -50%)' }}>{status === 'drawing' && hoverInfo.name && (<div key={hoverInfo.name} className={`absolute bg-black/95 backdrop-blur-xl px-4 py-2 rounded-full border border-white/20 flex items-center gap-2.5 shadow-2xl animate-in slide-in-from-bottom-1 fade-in duration-150 transition-all ${selectorPos.y < 25 ? 'top-14 translate-y-2' : '-top-14 -translate-y-2'}`}><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: hoverInfo.color }}></div><span className="text-[6.5px] font-black uppercase tracking-widest text-white">{hoverInfo.name}</span></div>)}{isAiming && <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: `rotate(${selectorAngle}deg)` }}><ArrowUp size={34} className="text-white drop-shadow-[0_0_15px_white] -translate-y-9 animate-pulse" /></div>}<div className="w-full h-full bg-white/20 backdrop-blur-[3.5px] rounded-full border-[3.5px] border-white shadow-[0_0_30px_rgba(255,255,255,0.45)] relative flex items-center justify-center overflow-hidden"><div className="absolute w-full h-[1px] bg-white/40"></div><div className="absolute h-full w-[1px] bg-white/40"></div><div className="relative z-10 w-4 h-4 flex items-center justify-center"><div className="absolute w-4 h-[2.5px] bg-white shadow-[0_0_8px_white] text-transparent">.</div><div className="absolute h-4 w-[2.5px] bg-white shadow-[0_0_8px_white] text-transparent">.</div></div></div></div></div></div>
       <div className="px-4 w-full flex items-center gap-3 mb-8 mt-2 shrink-0"><button onClick={() => addBid(20, true)} className={`${premium3DStyle} w-14 h-14 rounded-full flex items-center justify-center shrink-0`}><Pencil size={24} className="text-white" /></button>{[1, 5, 10].map(v => <button key={v} onClick={() => addBid(v, true)} className={`${premium3DStyle} flex-1 h-14 rounded-[24px] font-black text-lg`}>{v} <span className="opacity-40 text-xs">∇</span></button>)}<button onClick={() => addBid(myBalance, true)} className={`flex-1 h-14 rounded-[24px] font-black text-[13px] bg-gradient-to-b from-[#2563EB] to-[#1E40AF] border-t border-white/30 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[1px] uppercase transition-all`}>All-in</button></div>
 
       {/* Live Player List */}
@@ -1203,7 +1257,7 @@ const App = () => {
                     <div className="flex items-center gap-2 mb-8">
                       <span className="text-4xl font-black text-white leading-none">{myBalance.toFixed(2)}</span>
                       <div className="w-8 h-8 rounded-full bg-cyan-400 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]">
-                        <Zap size={14} className="text-black fill-black" />
+                        <span className="text-[14px]">💎</span>
                       </div>
                     </div>
                     <div className="flex gap-4 w-full px-4">
@@ -1271,9 +1325,9 @@ const App = () => {
       {activeTab === 'arena' && status === 'winner' && persistentWinner && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center animate-in fade-in duration-500">
            <div className="absolute inset-0 backdrop-blur-2xl transition-all duration-1000" style={{ background: `radial-gradient(circle at center, rgba(37, 99, 235, 0.4), rgba(79, 70, 229, 0.3), rgba(0, 0, 0, 0.6))` }} onClick={() => resetGame()}></div>
-           <div className="relative w-full max-w-md bg-[#111] rounded-t-[44px] border-t border-white/15 shadow-[0_-20px_80px_rgba(0,0,0,1)] flex flex-col items-center p-8 pb-12 overflow-hidden max-h-[70vh] animate-spring-up">
-              <div className="absolute top-6 right-6 z-10"><button onClick={() => resetGame()} className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center relative active:scale-90 transition-transform"><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="24" cy="24" r="22" stroke="white" strokeWidth="3" fill="none" strokeOpacity="0.1" /><circle cx="24" cy="24" r="22" stroke="white" strokeWidth="3" fill="none" strokeDasharray={138.2} strokeDashoffset={138.2 - (popupTimeLeft / 5) * 138.2} className="transition-all duration-50" /></svg><X size={20} className="text-white relative z-10" /></button></div>
-              <div className="text-center mb-6"><h2 className="text-3xl font-black text-white uppercase">{persistentWinner?.username || 'Player'} won</h2></div>
+           <div className="relative w-full max-w-md bg-[#111] rounded-t-[44px] border-t border-white/15 shadow-[0_-20px_80px_rgba(0,0,0,1)] flex flex-col items-center p-8 pt-20 pb-12 overflow-hidden max-h-[85vh] animate-spring-up">
+              <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10"><button onClick={() => resetGame()} className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center relative active:scale-90 transition-transform"><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="24" cy="24" r="22" stroke="white" strokeWidth="3" fill="none" strokeOpacity="0.1" /><circle cx="24" cy="24" r="22" stroke="white" strokeWidth="3" fill="none" strokeDasharray={138.2} strokeDashoffset={138.2 - (popupTimeLeft / 5) * 138.2} className="transition-all duration-50" /></svg><X size={20} className="text-white relative z-10" /></button></div>
+              <div className="text-center mb-6 mt-4"><h2 className="text-3xl font-black text-white uppercase">{persistentWinner?.username || 'Player'} won</h2></div>
               <div className="relative h-44 w-full flex items-center justify-center mb-6"><div className="absolute w-40 h-40 bg-gradient-radial from-[#2563EB]/40 via-[#4F46E5]/20 to-transparent blur-3xl animate-pulse"></div><div className="relative animate-bounce"><div className="relative"><Trophy size={90} className="text-yellow-400 drop-shadow-[0_0_40px_rgba(250,204,21,0.8)]" /><div className="absolute -top-6 -right-6 animate-spin-slow"><Star size={40} fill="#FACC15" className="text-yellow-400" /></div></div></div></div>
               <div className="flex items-center gap-3 mb-6 w-full justify-center"><div className="bg-[#1a1a1a] px-10 py-5 rounded-[28px] border border-white/5 shadow-inner flex flex-col items-center min-w-[200px]"><span className="text-3xl font-black text-white">{persistentWinner?.totalPrize?.toFixed(2) || '0.00'} TON</span><span className="text-[10px] text-white/30 uppercase font-bold mt-1">Total Prize</span></div><div className="bg-[#2563EB] px-6 py-5 rounded-[24px] border-t border-white/30 shadow-xl flex flex-col items-center"><span className="text-lg font-black text-white italic">{(persistentWinner?.totalPrize && persistentWinner?.bet) ? (persistentWinner.totalPrize / persistentWinner.bet).toFixed(2) : '1.00'}x</span><span className="text-[10px] text-white/50 uppercase font-bold mt-1">ROI</span></div></div>
               <div className="grid grid-cols-2 gap-4 w-full px-2"><div className="p-5 rounded-[32px] border-t border-white/15 shadow-xl flex flex-col items-center gap-2" style={{ background: `linear-gradient(to bottom, ${PLAYER_PALETTE[2].accent}, ${PLAYER_PALETTE[2].main})` }}><Trophy size={28} className="text-white/60" /><span className="text-sm font-black text-white">{(persistentWinner?.bet || 0).toFixed(2)} ∇</span><span className="text-[9px] text-white/50 uppercase font-bold">Winner's Bid</span></div><div className="p-5 rounded-[32px] border-t border-white/15 shadow-xl flex flex-col items-center gap-2" style={{ background: `linear-gradient(to bottom, #A5C9FF, #2563EB)` }}><Zap size={28} className="text-white/60" /><span className="text-sm font-black text-white">{(persistentWinner?.bet && persistentWinner?.totalPrize) ? ((persistentWinner.bet/persistentWinner.totalPrize)*100).toFixed(1) : '0.0'}%</span><span className="text-[9px] text-white/50 uppercase font-bold">Win Chance</span></div></div>
