@@ -107,26 +107,6 @@ const PROFILE_FRAMES = [
   { id: 'ton', name: 'TON VIP', price: 3000000, color: '#0088CC', shadow: '0 0 40px rgba(0, 136, 204, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: '∇', gradient: 'linear-gradient(135deg, #0088CC, #00AEEF)' },
   { id: 'sol', name: 'Solana VIP', price: 2500000, color: '#14F195', shadow: '0 0 40px rgba(20, 241, 149, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'S', gradient: 'linear-gradient(135deg, #14F195, #9945FF)' },
   { id: 'bnb', name: 'Binance VIP', price: 2000000, color: '#F3BA2F', shadow: '0 0 40px rgba(243, 186, 47, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'B', gradient: 'linear-gradient(135deg, #F3BA2F, #FFD700)' },
-  { id: 'lvl1', name: 'Bronze Guard', price: 10000, color: '#CD7F32', shadow: '0 0 15px rgba(205, 127, 50, 0.6), inset 0 0 8px rgba(255,255,255,0.3)' },
-  { id: 'lvl2', name: 'Iron Shell', price: 25000, color: '#A19D94', shadow: '0 0 15px rgba(161, 157, 148, 0.6), inset 0 0 8px rgba(255,255,255,0.3)' },
-  { id: 'lvl3', name: 'Silver Crest', price: 50000, color: '#C0C0C0', shadow: '0 0 20px rgba(192, 192, 192, 0.6), inset 0 0 10px rgba(255,255,255,0.4)' },
-  { id: 'lvl4', name: 'Gold Crown', price: 100000, color: '#FFD700', shadow: '0 0 25px rgba(255, 215, 0, 0.7), inset 0 0 12px rgba(255,255,255,0.5)' },
-  { id: 'lvl5', name: 'Platinum Edge', price: 250000, color: '#E5E4E2', shadow: '0 0 25px rgba(229, 228, 226, 0.7), inset 0 0 12px rgba(255,255,255,0.5)' },
-  { id: 'lvl6', name: 'Ruby Heart', price: 500000, color: '#E11D48', shadow: '0 0 30px rgba(225, 29, 72, 0.8), inset 0 0 15px rgba(255,255,255,0.4)' },
-  { id: 'lvl7', name: 'Emerald Pulse', price: 750000, color: '#10B981', shadow: '0 0 30px rgba(16, 185, 129, 0.8), inset 0 0 15px rgba(255,255,255,0.4)', animate: 'animate-pulse' },
-  { id: 'lvl8', name: 'Sapphire Flow', price: 1000000, color: '#3B82F6', shadow: '0 0 35px rgba(59, 130, 246, 0.8), inset 0 0 15px rgba(255,255,255,0.4)' },
-  { id: 'lvl9', name: 'Amethyst Aura', price: 1500000, color: '#8B5CF6', shadow: '0 0 40px rgba(139, 92, 246, 0.8), inset 0 0 20px rgba(255,255,255,0.4)' },
-  { id: 'lvl10', name: 'Onyx Shadow', price: 2000000, color: '#111', shadow: '0 0 45px rgba(0,0,0,0.9), inset 0 0 15px rgba(255,255,255,0.1)' },
-  { id: 'lvl11', name: 'Neon Strike', price: 3000000, color: '#22D3EE', shadow: '0 0 50px rgba(34, 211, 238, 0.9), inset 0 0 20px rgba(255,255,255,0.5)', borderStyle: 'dashed' },
-  { id: 'lvl12', name: 'Cyber Link', price: 4500000, color: '#F472B6', shadow: '0 0 55px rgba(244, 114, 182, 0.9), inset 0 0 20px rgba(255,255,255,0.5)', borderStyle: 'double', borderWidth: '5px' },
-  { id: 'lvl13', name: 'Magma Flow', price: 6000000, color: '#F97316', shadow: '0 0 60px rgba(249, 115, 22, 0.9), inset 0 0 25px rgba(255,255,255,0.5)', animate: 'animate-bounce' },
-  { id: 'lvl14', name: 'Glacier Frost', price: 8000000, color: '#93C5FD', shadow: '0 0 65px rgba(147, 197, 253, 0.9), inset 0 0 25px rgba(255,255,255,0.6)' },
-  { id: 'lvl15', name: 'Storm Caller', price: 10000000, color: '#FDE047', shadow: '0 0 70px rgba(253, 224, 71, 0.9), inset 0 0 30px rgba(255,255,255,0.6)', animate: 'animate-pulse' },
-  { id: 'lvl16', name: 'Void Walker', price: 15000000, color: '#4C1D95', shadow: '0 0 80px rgba(76, 29, 149, 1), inset 0 0 30px rgba(255,255,255,0.3)' },
-  { id: 'lvl17', name: 'Cosmic Dust', price: 25000000, color: '#EC4899', shadow: '0 0 90px rgba(236, 72, 153, 1), inset 0 0 35px rgba(255,255,255,0.4)', borderStyle: 'dotted' },
-  { id: 'lvl18', name: 'Prism Light', price: 50000000, gradient: 'conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)', shadow: '0 0 100px rgba(255,255,255,0.6), inset 0 0 40px rgba(255,255,255,0.5)' },
-  { id: 'lvl19', name: 'Dragon Soul', price: 100000000, color: '#B91C1C', shadow: '0 0 120px rgba(185, 28, 28, 1), inset 0 0 50px rgba(255,255,255,0.4)', borderWidth: '8px' },
-  { id: 'lvl20', name: 'Godly Halo', price: 250000000, color: '#FACC15', shadow: '0 0 150px rgba(250, 204, 21, 1), inset 0 0 60px rgba(255,255,255,0.6)', borderWidth: '10px', animate: 'animate-spin-slow' },
 ];
 
 const ProfileFrame = ({ frameId, children, className = "w-full h-full", shape = "circle" }) => {
@@ -139,17 +119,38 @@ const ProfileFrame = ({ frameId, children, className = "w-full h-full", shape = 
     <div className={`relative ${className} flex items-center justify-center p-[1px]`}>
       {/* Halo Glow */}
       <div 
-        className={`absolute inset-0 ${radius} z-0 ${frame.animate || ''} blur-[2px] opacity-80`} 
+        className={`absolute inset-0 ${radius} z-0 ${(frame as any).animate || ''} blur-[4px] opacity-90 overflow-hidden`} 
         style={{ 
-          background: frame.gradient || frame.color,
-          boxShadow: frame.shadow || `0 0 25px ${frame.color}aa`,
+          background: (frame as any).gradient || (frame as any).color,
+          boxShadow: (frame as any).shadow || `0 0 35px ${(frame as any).color}`,
         }}
-      ></div>
+      >
+        {(frame as any).crypto && (
+          <div className="absolute inset-0 pointer-events-none opacity-70">
+            {[...Array(8)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute text-[14px] font-black animate-coin-float"
+                style={{ 
+                  left: `${Math.random() * 100}%`, 
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  animationDuration: `${4 + Math.random() * 4}s`,
+                  color: 'white',
+                  textShadow: '0 0 8px rgba(255,255,255,0.9)'
+                }}
+              >
+                {(frame as any).crypto}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       
-      {/* Inner Frame */}
-      <div className={`absolute inset-[2px] ${radius} z-[1] bg-gradient-to-br from-white/20 to-transparent pointer-events-none`}></div>
+      {/* Inner Frame Glow */}
+      <div className={`absolute inset-[1px] ${radius} z-[1] bg-gradient-to-br from-white/40 to-transparent pointer-events-none opacity-50`}></div>
 
-      <div className={`w-[calc(100%-6px)] h-[calc(100%-6px)] ${radius} overflow-hidden relative z-10 bg-[#0a0a0a] ring-1 ring-white/10`}>
+      <div className={`w-[calc(100%-8px)] h-[calc(100%-8px)] ${radius} overflow-hidden relative z-10 bg-[#050505] ring-1 ring-white/20 shadow-inner`}>
         {children}
       </div>
     </div>
@@ -509,9 +510,7 @@ const StaticBoard = memo(({ territories, winner }) => {
           <g clipPath={`url(#clip-${i})`}>
             <foreignObject x={t.avatarPos.x - 15} y={t.avatarPos.y - 15} width="30" height="30">
               <div className="w-full h-full flex items-center justify-center transition-all duration-700 ease-in-out">
-                <ProfileFrame frameId={t.selectedFrame} className="w-full h-full">
-                  <img src={t.avatar} className="w-full h-full rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
-                </ProfileFrame>
+                <img src={t.avatar} className="w-full h-full rounded-full object-cover border-2 border-white/20 shadow-xl" alt="" referrerPolicy="no-referrer" />
               </div>
             </foreignObject>
           </g>
@@ -2125,25 +2124,25 @@ const App = () => {
             const isVIP = ['btc', 'eth', 'ton', 'sol', 'bnb'].includes(p.selectedFrame);
             
             return (
-              <div key={i} className="p-4 rounded-[32px] flex items-center justify-between border border-white/5 shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))` }}>
+              <div key={i} className="p-5 rounded-[44px] flex items-center justify-between border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] bg-[#0a0a0a]" style={{ background: `linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.4))` }}>
                 {/* Animated Background Glow */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20" style={{ background: `radial-gradient(circle at 20% 50%, ${p.color}, transparent 70%)` }}></div>
+                <div className="absolute inset-0 opacity-30 pointer-events-none transition-opacity group-hover:opacity-40" style={{ background: `radial-gradient(circle at 20% 50%, ${p.color}, transparent 85%)` }}></div>
                 
                 {/* VIP Crypto Animation */}
                 {isVIP && (
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-40">
-                    {[...Array(6)].map((_, idx) => (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-80">
+                    {[...Array(10)].map((_, idx) => (
                       <div 
                         key={idx}
-                        className="absolute text-3xl font-black italic select-none animate-coin-float"
+                        className="absolute text-5xl font-black italic select-none animate-coin-float"
                         style={{
-                          left: `${20 + Math.random() * 60}%`,
-                          top: `${10 + Math.random() * 80}%`,
-                          animationDelay: `${idx * 0.7}s`,
-                          animationDuration: `${5 + Math.random() * 4}s`,
+                          left: `${Math.random() * 100}%`,
+                          top: `${Math.random() * 100}%`,
+                          animationDelay: `${idx * 0.4}s`,
+                          animationDuration: `${5 + Math.random() * 5}s`,
                           color: frame.color,
-                          filter: 'blur(2px)',
-                          opacity: 0.3
+                          filter: 'blur(0.5px)',
+                          opacity: 0.5
                         }}
                       >
                         {frame.crypto}
