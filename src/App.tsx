@@ -102,6 +102,11 @@ const PLAYER_PALETTE = [
 
 const PROFILE_FRAMES = [
   { id: 'none', name: 'Default', price: 0, color: 'transparent' },
+  { id: 'btc', name: 'Bitcoin VIP', price: 5000000, color: '#F7931A', shadow: '0 0 40px rgba(247, 147, 26, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: '₿', gradient: 'linear-gradient(135deg, #F7931A, #FFAB40)' },
+  { id: 'eth', name: 'Ethereum VIP', price: 4000000, color: '#627EEA', shadow: '0 0 40px rgba(98, 126, 234, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'Ξ', gradient: 'linear-gradient(135deg, #627EEA, #8C8CFF)' },
+  { id: 'ton', name: 'TON VIP', price: 3000000, color: '#0088CC', shadow: '0 0 40px rgba(0, 136, 204, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: '∇', gradient: 'linear-gradient(135deg, #0088CC, #00AEEF)' },
+  { id: 'sol', name: 'Solana VIP', price: 2500000, color: '#14F195', shadow: '0 0 40px rgba(20, 241, 149, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'S', gradient: 'linear-gradient(135deg, #14F195, #9945FF)' },
+  { id: 'bnb', name: 'Binance VIP', price: 2000000, color: '#F3BA2F', shadow: '0 0 40px rgba(243, 186, 47, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'B', gradient: 'linear-gradient(135deg, #F3BA2F, #FFD700)' },
   { id: 'lvl1', name: 'Bronze Guard', price: 10000, color: '#CD7F32', shadow: '0 0 15px rgba(205, 127, 50, 0.6), inset 0 0 8px rgba(255,255,255,0.3)' },
   { id: 'lvl2', name: 'Iron Shell', price: 25000, color: '#A19D94', shadow: '0 0 15px rgba(161, 157, 148, 0.6), inset 0 0 8px rgba(255,255,255,0.3)' },
   { id: 'lvl3', name: 'Silver Crest', price: 50000, color: '#C0C0C0', shadow: '0 0 20px rgba(192, 192, 192, 0.6), inset 0 0 10px rgba(255,255,255,0.4)' },
@@ -133,13 +138,32 @@ const ProfileFrame = ({ frameId, children, className = "w-full h-full", shape = 
   return (
     <div className={`relative ${className} flex items-center justify-center p-[4px]`}>
       <div 
-        className={`absolute inset-0 ${radius} z-0 ${frame.animate || ''} shadow-2xl`} 
+        className={`absolute inset-0 ${radius} z-0 ${frame.animate || ''} shadow-2xl overflow-hidden`} 
         style={{ 
           background: frame.gradient || 'transparent',
           border: frame.gradient ? 'none' : `${frame.borderWidth || '4px'} ${frame.borderStyle || 'solid'} ${frame.color}`,
           boxShadow: frame.shadow || 'none'
         }}
-      ></div>
+      >
+        {frame.crypto && (
+          <div className="absolute inset-0 pointer-events-none opacity-40">
+            {[...Array(6)].map((_, i) => (
+              <div 
+                key={i} 
+                className="absolute text-[10px] font-black animate-coin-fall"
+                style={{ 
+                  left: `${Math.random() * 100}%`, 
+                  top: `-${Math.random() * 50}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  color: 'white'
+                }}
+              >
+                {frame.crypto}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className={`w-full h-full ${radius} overflow-hidden relative z-10 bg-black/40 backdrop-blur-sm`}>
         {children}
       </div>
@@ -869,10 +893,16 @@ const App = () => {
       pts.push(getCoord(end));
       currentP += share;
       const midP = start + (share / 2), bPt = getCoord(midP);
+      
+      // First bidder stays in center if only one player
+      const avatarPos = players.length === 1 
+        ? { x: 50, y: 50 } 
+        : { x: center.x + (bPt.x - center.x) * 0.72, y: center.y + (bPt.y - center.y) * 0.72 };
+
       return { 
         ...player, 
         points: pts.map(pt => `${pt.x},${pt.y}`).join(' '), 
-        avatarPos: { x: center.x + (bPt.x - center.x) * 0.72, y: center.y + (bPt.y - center.y) * 0.72 },
+        avatarPos,
         startP: start, endP: end 
       };
     });
@@ -2107,11 +2137,24 @@ const App = () => {
         <div className="space-y-4">
           {players.map((p, i) => {
             const frame = PROFILE_FRAMES.find(f => f.id === p.selectedFrame);
+            const isVIP = ['btc', 'eth', 'ton', 'sol', 'bnb'].includes(p.selectedFrame);
+            
             return (
               <div key={i} className="p-4 rounded-[32px] flex items-center justify-between border border-white/5 shadow-2xl relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))` }}>
                 {/* Animated Background Glow */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20" style={{ background: `radial-gradient(circle at 20% 50%, ${p.color}, transparent 70%)` }}></div>
                 
+                {/* VIP Crypto Animation */}
+                {isVIP && (
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+                    <div className="absolute inset-0 flex items-center justify-around text-4xl font-black italic select-none animate-crypto-slide">
+                      <span>{frame.crypto}</span>
+                      <span>{frame.crypto}</span>
+                      <span>{frame.crypto}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Shimmer Effect */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
@@ -2546,6 +2589,10 @@ const App = () => {
         .animate-spin-slow { animation: spin 8s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes coinFall { 0% { transform: translateY(-100%) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(500%) rotate(720deg); opacity: 0; } }
+        @keyframes cryptoSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .animate-coin-fall { animation: coinFall linear infinite; }
+        .animate-crypto-slide { animation: cryptoSlide 10s linear infinite; }
       `}</style>
       <SparkleBackground />
       {isAdminPanelOpen && <AdminPanel />}
