@@ -511,9 +511,9 @@ const StaticBoard = memo(({ territories, winner }) => {
         <g key={i}>
           <polygon points={t.points} fill={`url(#grad-${i})`} className="transition-all duration-700 ease-in-out" style={{ opacity: (winner && winner.username !== t.username) ? 0.15 : 1 }} />
           <g clipPath={`url(#clip-${i})`}>
-            <foreignObject x={t.avatarPos.x - 15} y={t.avatarPos.y - 15} width="30" height="30">
+            <foreignObject x={t.avatarPos.x - 7.5} y={t.avatarPos.y - 7.5} width="15" height="15">
               <div className="w-full h-full flex items-center justify-center transition-all duration-700 ease-in-out">
-                <img src={t.avatar} className="w-full h-full rounded-full object-cover border-2 border-white/20 shadow-xl" alt="" referrerPolicy="no-referrer" />
+                <img src={t.avatar} className="w-full h-full rounded-full object-cover border-[1px] border-white/20 shadow-xl" alt="" referrerPolicy="no-referrer" />
               </div>
             </foreignObject>
           </g>
@@ -2078,7 +2078,7 @@ const App = () => {
       } else {
         setLoadingProgress(currentProgress);
       }
-    }, 60); // 60ms * 50 steps = 3 seconds
+    }, 40); // 40ms * 50 steps = 2 seconds
   };
 
   const handleLike = () => {
@@ -2135,14 +2135,15 @@ const App = () => {
           {players.map((p, i) => {
             const frame = PROFILE_FRAMES.find(f => f.id === p.selectedFrame);
             const isVIP = ['btc', 'eth', 'ton', 'sol', 'bnb'].includes(p.selectedFrame);
+            const isMe = p.uid === user?.uid;
             
-            return (
-              <div key={i} className="p-5 rounded-[44px] flex items-center justify-between border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] bg-[#0a0a0a]" style={{ background: `linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.4))` }}>
-                {/* Animated Background Glow */}
-                <div className="absolute inset-0 opacity-30 pointer-events-none transition-opacity group-hover:opacity-40" style={{ background: `radial-gradient(circle at 20% 50%, ${p.color}, transparent 85%)` }}></div>
-                
-                {/* VIP Crypto Animation */}
-                {isVIP && (
+            if (isVIP) {
+              return (
+                <div key={i} className="p-4 rounded-[32px] flex items-center justify-between border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] bg-[#0a0a0a]" style={{ background: `linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.4))` }}>
+                  {/* Animated Background Glow */}
+                  <div className="absolute inset-0 opacity-30 pointer-events-none transition-opacity group-hover:opacity-40" style={{ background: `radial-gradient(circle at 20% 50%, ${p.color}, transparent 85%)` }}></div>
+                  
+                  {/* VIP Crypto Animation */}
                   <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-80">
                     {[...Array(10)].map((_, idx) => (
                       <div 
@@ -2152,47 +2153,73 @@ const App = () => {
                           left: `${Math.random() * 100}%`,
                           top: `${Math.random() * 100}%`,
                           animationDelay: `${idx * 0.4}s`,
-                          animationDuration: `${5 + Math.random() * 5}s`,
-                          color: frame.color,
+                          animationDuration: `${8 + Math.random() * 5}s`,
+                          color: (frame as any).color,
                           filter: 'blur(0.5px)',
-                          opacity: 0.5
+                          opacity: 0.4
                         }}
                       >
-                        {frame.crypto}
+                        {(frame as any).crypto}
                       </div>
                     ))}
                   </div>
-                )}
 
-                {/* Shimmer Effect */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
-                </div>
+                  {/* Shimmer Effect */}
+                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
+                  </div>
 
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="relative">
-                    <ProfileFrame frameId={p.selectedFrame} className="w-14 h-14">
-                      <img src={p.avatar} className="w-full h-full rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
-                    </ProfileFrame>
-                    {p.isMe && <div className="absolute -top-1 -right-1 bg-cyan-400 text-black text-[8px] font-black px-2 py-0.5 rounded-full border border-black/20 shadow-lg">YOU</div>}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[14px] font-black text-white uppercase tracking-tight flex items-center gap-2">
-                      {p.username}
-                      {frame && frame.id !== 'none' && <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: frame.color }}></div>}
-                    </span>
-                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.1em]">Arena Participant</span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end relative z-10">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[18px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
-                    <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                      <span className="text-[10px] text-white/60">∇</span>
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="relative">
+                      <ProfileFrame frameId={p.selectedFrame} className="w-14 h-14">
+                        <img src={p.avatar} className="w-full h-full rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
+                      </ProfileFrame>
+                      {isMe && <div className="absolute -top-1 -right-1 bg-cyan-400 text-black text-[8px] font-black px-2 py-0.5 rounded-full border border-black/20 shadow-lg z-20">YOU</div>}
+                      <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-yellow-300 to-yellow-600 p-1 rounded-lg shadow-lg border border-white/20 animate-pulse z-20">
+                        <Medal size={10} className="text-white" fill="currentColor" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-black text-white uppercase tracking-tight">{p.username}</span>
+                        <span className="text-[8px] font-black bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-full border border-yellow-500/30 uppercase tracking-widest">VIP</span>
+                      </div>
+                      <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.1em]">Arena Participant</span>
                     </div>
                   </div>
-                  <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">TON</span>
+                  
+                  <div className="flex flex-col items-end relative z-10">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[18px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
+                      <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                        <span className="text-[10px] text-white/60">∇</span>
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">TON</span>
+                  </div>
+                </div>
+              );
+            }
+
+            // Simple Card for non-VIP players
+            return (
+              <div key={i} className="p-3.5 rounded-[24px] flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[1px] transition-all bg-[#111]">
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <img src={p.avatar} className="w-11 h-11 rounded-full border-[1.5px] border-white/20 shadow-md object-cover" referrerPolicy="no-referrer" />
+                    {isMe && <div className="absolute -top-1 -right-1 bg-cyan-400 text-black text-[7px] font-black px-1.5 py-0.5 rounded-full border border-black/20 shadow-lg z-20">YOU</div>}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12px] font-black text-white uppercase tracking-tight">{p.username}</span>
+                    <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest">{p.winChance}% {t.winChance}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[14px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
+                    <span className="text-[10px] font-black text-white/60 uppercase">∇</span>
+                  </div>
+                  <span className="text-[8px] font-bold text-white/40 uppercase">TON</span>
                 </div>
               </div>
             );
@@ -2526,10 +2553,11 @@ const App = () => {
           <>
             <div className="flex items-center gap-6 py-10 shrink-0 relative z-10">
               <div className="relative">
-                <div onClick={handleAdminTrigger} className="w-24 h-24 rounded-[28px] overflow-hidden border-[3px] border-white/10 shadow-2xl active:scale-95 transition-transform cursor-pointer flex items-center justify-center">
-                  <ProfileFrame frameId={userData?.selectedFrame} className="w-full h-full" shape="square">
-                    <img src={avatar} className="w-full h-full object-cover bg-[#1a1a1a]" referrerPolicy="no-referrer" />
-                  </ProfileFrame>
+                <div 
+                  onClick={handleAdminTrigger} 
+                  className={`w-24 h-24 rounded-[28px] overflow-hidden shadow-2xl transition-transform flex items-center justify-center ${isAdmin ? 'active:scale-95 cursor-pointer border-[3px] border-white/20' : 'border border-white/5'}`}
+                >
+                  <img src={avatar} className="w-full h-full object-cover bg-[#1a1a1a]" referrerPolicy="no-referrer" />
                 </div>
                 <button onClick={() => setIsFrameSelectorOpen(true)} className="absolute -bottom-2 -right-2 bg-[#2563EB] p-2 rounded-xl border-t border-white/30 shadow-lg text-white active:scale-90 transition-transform">
                   <Settings size={14} fill="currentColor" />
@@ -2603,7 +2631,10 @@ const App = () => {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         @keyframes coinFall { 0% { transform: translateY(-100%) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(500%) rotate(720deg); opacity: 0; } }
-        @keyframes coinFloat { 0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.2; } 50% { transform: translate(10px, -20px) rotate(180deg); opacity: 0.8; } }
+        @keyframes coinFloat { 
+          0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.2; } 
+          50% { transform: translate3d(15px, -25px, 0) rotate(180deg); opacity: 0.7; } 
+        }
         @keyframes cryptoSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         .animate-coin-fall { animation: coinFall linear infinite; }
         .animate-coin-float { animation: coinFloat ease-in-out infinite; }
@@ -2694,53 +2725,80 @@ const App = () => {
         {isGameLoaded && activeTab === 'profile' && renderProfile()}
         {isGameLoaded && activeTab === 'rank' && renderRank()}
         {isGameLoaded && activeTab === 'market' && (
-          <div className="flex-1 flex flex-col p-6 relative z-10 overflow-y-auto no-scrollbar pb-40">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-black text-white uppercase mb-1">{t.shop}</h1>
-              <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Upgrade your experience</p>
+          <div className="flex-1 flex flex-col p-4 relative z-10 overflow-y-auto no-scrollbar pb-40">
+            <div className="flex flex-col items-center mb-8 pt-6">
+              <div className="bg-[#E91E63] px-8 py-2 rounded-lg shadow-[0_4px_0_#AD1457] border-2 border-[#FFD54F] mb-4 transform -skew-x-12">
+                <h1 className="text-xl font-black text-white uppercase italic tracking-wider skew-x-12">VIP PACKS</h1>
+              </div>
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">Exclusive Rewards & Frames</p>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {[
-                { id: 'item_1', name: 'Starter Pack', price: 10000, type: 'PUCK', icon: <Gift size={24} /> },
-                { id: 'item_2', name: 'Pro Badge', price: 50000, type: 'PUCK', icon: <Medal size={24} /> },
-                { id: 'item_3', name: 'Elite Skin', price: 1, type: 'TON', icon: <Star size={24} /> },
-              ].map(item => (
-                <div key={item.id} className="p-5 rounded-[32px] bg-[#111] border-t border-white/5 shadow-xl flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-rose-400">{item.icon}</div>
-                    <div className="flex flex-col">
-                      <span className="text-white font-black text-sm uppercase">{item.name}</span>
-                      <span className="text-white/30 font-bold text-[10px] uppercase">{item.price} {item.type}</span>
+                { id: 'pack_bnb', frameId: 'bnb', name: 'BNB SPECIAL', pucks: 100000, price: 1, color: '#F3BA2F' },
+                { id: 'pack_sol', frameId: 'sol', name: 'SOLANA ELITE', pucks: 300000, price: 3, color: '#14F195' },
+                { id: 'pack_ton', frameId: 'ton', name: 'TON PREMIUM', pucks: 500000, price: 5, color: '#0088CC' },
+                { id: 'pack_eth', frameId: 'eth', name: 'ETH LEGEND', pucks: 1000000, price: 7, color: '#627EEA' },
+                { id: 'pack_btc', frameId: 'btc', name: 'BTC MYTHIC', pucks: 2000000, price: 10, color: '#F7931A' },
+              ].map(pack => (
+                <div key={pack.id} className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-b from-white/20 to-transparent rounded-[24px] blur-[1px]"></div>
+                  <div className="relative h-full bg-gradient-to-b from-[#42A5F5] to-[#1976D2] rounded-[24px] border-2 border-[#64B5F6] p-3 flex flex-col items-center shadow-2xl overflow-hidden">
+                    {/* Radial Burst Background */}
+                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,white_0%,transparent_70%)]"></div>
+                    
+                    <div className="flex flex-col items-center mb-4 relative z-10 w-full">
+                      <span className="text-[10px] font-black text-[#E3F2FD] uppercase tracking-tighter opacity-80">VIP PACK</span>
+                      <span className="text-[12px] font-black text-white uppercase tracking-tight text-center leading-none mt-1">{pack.name}</span>
+                    </div>
+
+                    <div className="relative w-24 h-24 mb-4 z-10 flex items-center justify-center">
+                      {/* Inner Card/Cart style */}
+                      <div className="absolute inset-0 bg-black/20 rounded-2xl backdrop-blur-sm border border-white/10"></div>
+                      <div className="w-16 h-16 relative">
+                        <ProfileFrame frameId={pack.frameId} className="w-full h-full">
+                          <img 
+                            src={WebApp.initDataUnsafe?.user?.photo_url || user?.photoURL || DEFAULT_AVATAR} 
+                            className="w-full h-full object-cover rounded-full" 
+                            alt="" 
+                            referrerPolicy="no-referrer"
+                          />
+                        </ProfileFrame>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto w-full relative z-10 flex flex-col items-center">
+                      <button 
+                        onClick={async () => {
+                          if (!user) return;
+                          if (myBalance < pack.price) {
+                            alert("Insufficient TON balance!");
+                            return;
+                          }
+                          
+                          try {
+                            const userRef = doc(db, 'users', user.uid);
+                            await updateDoc(userRef, {
+                              balance: increment(-pack.price),
+                              puckBalance: increment(pack.pucks),
+                              unlockedFrames: arrayUnion(pack.frameId),
+                              shopPurchases: arrayUnion(pack.name)
+                            });
+                            setMyBalance(prev => prev - pack.price);
+                            setPuckBalance(prev => prev + pack.pucks);
+                            
+                            WebApp.HapticFeedback.notificationOccurred('success');
+                            alert(`Successfully purchased ${pack.name}! You received ${pack.pucks.toLocaleString()} PUCK and the VIP frame.`);
+                          } catch (e) { console.error(e); }
+                        }}
+                        className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-1.5 ${white3DStyle}`}
+                      >
+                        <span className="text-[14px]">💎</span>
+                        <span className="text-sm uppercase">{pack.price.toFixed(2)} TON</span>
+                      </button>
+                      <span className="text-[9px] font-black text-white/90 mt-2 bg-black/20 px-2 py-0.5 rounded-full border border-white/10">+{pack.pucks.toLocaleString()} PUCK</span>
                     </div>
                   </div>
-                  <button 
-                    onClick={async () => {
-                      if (!user) return;
-                      const canAfford = item.type === 'TON' ? myBalance >= item.price : puckBalance >= item.price;
-                      if (!canAfford) {
-                        alert(`Insufficient ${item.type} balance!`);
-                        return;
-                      }
-                      
-                      try {
-                        const userRef = doc(db, 'users', user.uid);
-                        await updateDoc(userRef, {
-                          balance: item.type === 'TON' ? increment(-item.price) : increment(0),
-                          puckBalance: item.type === 'PUCK' ? increment(-item.price) : increment(0),
-                          shopPurchases: arrayUnion(item.name)
-                        });
-                        if (item.type === 'TON') setMyBalance(prev => prev - item.price);
-                        else setPuckBalance(prev => prev - item.price);
-                        
-                        WebApp.HapticFeedback.notificationOccurred('success');
-                        alert(`Successfully purchased ${item.name}!`);
-                      } catch (e) { console.error(e); }
-                    }}
-                    className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${white3DStyle}`}
-                  >
-                    Buy
-                  </button>
                 </div>
               ))}
             </div>
