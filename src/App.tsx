@@ -50,6 +50,7 @@ import {
   X,
   Star,
   Settings,
+  User,
   UserPlus,
   Bolt,
   Medal,
@@ -98,6 +99,53 @@ const PLAYER_PALETTE = [
   { main: '#EA580C', light: '#FFC89E', accent: '#FFE4D1' }, 
   { main: '#4F46E5', light: '#BCC3FF', accent: '#DEE1FF' },
 ];
+
+const PROFILE_FRAMES = [
+  { id: 'none', name: 'Default', price: 0, color: 'transparent' },
+  { id: 'lvl1', name: 'Bronze Guard', price: 10000, color: '#CD7F32', shadow: '0 0 10px #CD7F32' },
+  { id: 'lvl2', name: 'Iron Shell', price: 25000, color: '#A19D94', shadow: '0 0 12px #A19D94' },
+  { id: 'lvl3', name: 'Silver Crest', price: 50000, color: '#C0C0C0', shadow: '0 0 15px #C0C0C0' },
+  { id: 'lvl4', name: 'Gold Crown', price: 100000, color: '#FFD700', shadow: '0 0 20px #FFD700' },
+  { id: 'lvl5', name: 'Platinum Edge', price: 250000, color: '#E5E4E2', shadow: '0 0 25px #E5E4E2' },
+  { id: 'lvl6', name: 'Ruby Heart', price: 500000, color: '#E11D48', shadow: '0 0 30px #E11D48' },
+  { id: 'lvl7', name: 'Emerald Pulse', price: 750000, color: '#10B981', shadow: '0 0 30px #10B981', animate: 'animate-pulse' },
+  { id: 'lvl8', name: 'Sapphire Flow', price: 1000000, color: '#3B82F6', shadow: '0 0 35px #3B82F6' },
+  { id: 'lvl9', name: 'Amethyst Aura', price: 1500000, color: '#8B5CF6', shadow: '0 0 40px #8B5CF6' },
+  { id: 'lvl10', name: 'Onyx Shadow', price: 2000000, color: '#111', shadow: '0 0 45px rgba(0,0,0,0.8)' },
+  { id: 'lvl11', name: 'Neon Strike', price: 3000000, color: '#22D3EE', shadow: '0 0 50px #22D3EE', borderStyle: 'dashed' },
+  { id: 'lvl12', name: 'Cyber Link', price: 4500000, color: '#F472B6', shadow: '0 0 55px #F472B6', borderStyle: 'double', borderWidth: '4px' },
+  { id: 'lvl13', name: 'Magma Flow', price: 6000000, color: '#F97316', shadow: '0 0 60px #F97316', animate: 'animate-bounce' },
+  { id: 'lvl14', name: 'Glacier Frost', price: 8000000, color: '#93C5FD', shadow: '0 0 65px #93C5FD' },
+  { id: 'lvl15', name: 'Storm Caller', price: 10000000, color: '#FDE047', shadow: '0 0 70px #FDE047', animate: 'animate-pulse' },
+  { id: 'lvl16', name: 'Void Walker', price: 15000000, color: '#4C1D95', shadow: '0 0 80px #4C1D95' },
+  { id: 'lvl17', name: 'Cosmic Dust', price: 25000000, color: '#EC4899', shadow: '0 0 90px #EC4899', borderStyle: 'dotted' },
+  { id: 'lvl18', name: 'Prism Light', price: 50000000, gradient: 'conic-gradient(from 0deg, red, yellow, green, cyan, blue, magenta, red)', shadow: '0 0 100px rgba(255,255,255,0.5)' },
+  { id: 'lvl19', name: 'Dragon Soul', price: 100000000, color: '#B91C1C', shadow: '0 0 120px #B91C1C', borderWidth: '6px' },
+  { id: 'lvl20', name: 'Godly Halo', price: 250000000, color: '#FACC15', shadow: '0 0 150px #FACC15', borderWidth: '8px', animate: 'animate-spin-slow' },
+];
+
+const ProfileFrame = ({ frameId, children, className = "w-full h-full", shape = "circle" }) => {
+  const frame = PROFILE_FRAMES.find(f => f.id === frameId);
+  const radius = shape === 'circle' ? 'rounded-full' : 'rounded-[28px]';
+  
+  if (!frame || frameId === 'none') return <div className={`${className} ${radius} overflow-hidden`}>{children}</div>;
+  
+  return (
+    <div className={`relative ${className} flex items-center justify-center p-[3px]`}>
+      <div 
+        className={`absolute inset-0 ${radius} z-0 ${frame.animate || ''}`} 
+        style={{ 
+          background: frame.gradient || 'transparent',
+          border: frame.gradient ? 'none' : `${frame.borderWidth || '3px'} ${frame.borderStyle || 'solid'} ${frame.color}`,
+          boxShadow: frame.shadow || 'none'
+        }}
+      ></div>
+      <div className={`w-full h-full ${radius} overflow-hidden relative z-10 bg-black`}>
+        {children}
+      </div>
+    </div>
+  );
+};
 
 const FLAGS = ['🇺🇸', '🇷🇺', '🇮🇷', '🇩🇪'];
 const LANGUAGES = ['en', 'ru', 'fa', 'de'];
@@ -450,7 +498,9 @@ const StaticBoard = memo(({ territories, winner }) => {
           <g clipPath={`url(#clip-${i})`}>
             <foreignObject x={t.avatarPos.x - 7.5} y={t.avatarPos.y - 7.5} width="15" height="15">
               <div className="w-full h-full flex items-center justify-center transition-all duration-700 ease-in-out">
-                <img src={t.avatar} className="w-full h-full rounded-full border-[1.5px] border-black/10 shadow-lg" alt="" referrerPolicy="no-referrer" />
+                <ProfileFrame frameId={t.selectedFrame} className="w-full h-full">
+                  <img src={t.avatar} className="w-full h-full rounded-full border-[1.5px] border-black/10 shadow-lg" alt="" referrerPolicy="no-referrer" />
+                </ProfileFrame>
               </div>
             </foreignObject>
           </g>
@@ -491,6 +541,9 @@ const App = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [allTasks, setAllTasks] = useState([]);
   const [userData, setUserData] = useState<any>(null);
+  const [verifyingTaskId, setVerifyingTaskId] = useState(null);
+  const [waitTimer, setWaitTimer] = useState(0);
+  const [isFrameSelectorOpen, setIsFrameSelectorOpen] = useState(false);
   const [hasPlayedBefore, setHasPlayedBefore] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('giftphase_played') === 'true';
@@ -560,7 +613,9 @@ const App = () => {
               completedTasks: [],
               referrer: referrerId || null,
               role: (firebaseUser.email === 'jahidproject8@gmail.com' || (tgUser && [6686954447, 1678112785, 5968063026].includes(tgUser.id))) ? 'admin' : 'user',
-              createdAt: serverTimestamp()
+              createdAt: serverTimestamp(),
+              selectedFrame: 'none',
+              unlockedFrames: []
             };
             await setDoc(userRef, initialData);
             setMyBalance(10.0);
@@ -571,7 +626,7 @@ const App = () => {
               const refDoc = doc(db, 'users', referrerId);
               updateDoc(refDoc, {
                 balance: increment(1.0), // 1 TON bonus for referrer
-                referralCount: increment(1)
+                referralsCount: increment(1)
               }).catch(() => {}); // Ignore if referrer doesn't exist
             }
           }
@@ -1050,7 +1105,8 @@ const App = () => {
         try {
           await updateDoc(doc(db, 'users', user.uid), {
             balance: increment(-finalAmt),
-            volume: increment(finalAmt)
+            volume: increment(finalAmt),
+            spinsCount: increment(1)
           });
         } catch (error) {
           handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
@@ -1073,9 +1129,20 @@ const App = () => {
       const existingIdx = currentPlayers.findIndex(p => p.username === n);
       if (existingIdx > -1) {
         currentPlayers[existingIdx].bet += finalAmt;
+        if (isMe) currentPlayers[existingIdx].selectedFrame = userData?.selectedFrame || 'none';
       } else if (currentPlayers.length < 15) {
         const pal = PLAYER_PALETTE[currentPlayers.length % PLAYER_PALETTE.length];
-        const newPlayer = { username: n, avatar: a, bet: finalAmt, color: pal.main, lightColor: pal.light, accentColor: pal.accent, isMe, id: Date.now() + Math.random() };
+        const newPlayer = { 
+          username: n, 
+          avatar: a, 
+          bet: finalAmt, 
+          color: pal.main, 
+          lightColor: pal.light, 
+          accentColor: pal.accent, 
+          isMe, 
+          id: Date.now() + Math.random(),
+          selectedFrame: isMe ? (userData?.selectedFrame || 'none') : 'none'
+        };
         currentPlayers.push(newPlayer);
       }
 
@@ -1222,12 +1289,13 @@ const App = () => {
         <div className="flex overflow-x-auto no-scrollbar border-b border-white/10 shrink-0 bg-white/5">
           {[
             { id: 'users', icon: <Users size={18} />, label: 'Users' },
-            { id: 'tasks', icon: <CheckSquare size={18} />, label: 'Tasks' },
+            { id: 'daily_tasks', icon: <CheckSquare size={18} />, label: 'Daily' },
+            { id: 'achievement_tasks', icon: <Trophy size={18} />, label: 'Achievements' },
+            { id: 'partner_tasks', icon: <Users size={18} />, label: 'Partners' },
             { id: 'promo', icon: <Gift size={18} />, label: 'Promo' },
             { id: 'referral', icon: <Link size={18} />, label: 'Referral' },
             { id: 'analytics', icon: <BarChart2 size={18} />, label: 'Stats' },
             { id: 'withdrawal', icon: <Coins size={18} />, label: 'Offers' },
-            { id: 'messages', icon: <MessageSquare size={18} />, label: 'Chat' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1433,34 +1501,64 @@ const App = () => {
             </div>
           )}
 
-          {adminTab === 'tasks' && (
+          {['daily_tasks', 'achievement_tasks', 'partner_tasks'].includes(adminTab) && (
             <div className="space-y-6">
-              {/* Task Category Tabs */}
-              <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
-                {['daily', 'achievement', 'partner'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setTaskFilter(cat)}
-                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                      taskFilter === cat 
-                      ? 'bg-rose-400 text-black shadow-lg' 
-                      : 'text-white/40 hover:text-white/60'
-                    }`}
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black text-white uppercase italic">
+                  {adminTab === 'daily_tasks' ? 'Daily Tasks' : adminTab === 'achievement_tasks' ? 'Achievement Tasks' : 'Partner Tasks'}
+                </h3>
+                {adminTab === 'achievement_tasks' && (
+                  <button 
+                    onClick={async () => {
+                      if (confirm("This will add 20 achievement tasks. Continue?")) {
+                        const tasks = [
+                          { id: 'ach_ref_1', title: 'Referral Master I', description: 'Refer 1 friend to join Gift Phase.', reward: 50000, rewardType: 'PUCK', type: 'achievement', verificationType: 'referral', requiredCount: 1, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
+                          { id: 'ach_ref_2', title: 'Referral Master II', description: 'Refer 5 friends to join Gift Phase.', reward: 250000, rewardType: 'PUCK', type: 'achievement', verificationType: 'referral', requiredCount: 5, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
+                          { id: 'ach_ref_3', title: 'Referral Master III', description: 'Refer 10 friends to join Gift Phase.', reward: 500000, rewardType: 'PUCK', type: 'achievement', verificationType: 'referral', requiredCount: 10, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
+                          { id: 'ach_ref_4', title: 'Referral Master IV', description: 'Refer 25 friends to join Gift Phase.', reward: 1500000, rewardType: 'PUCK', type: 'achievement', verificationType: 'referral', requiredCount: 25, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
+                          { id: 'ach_ref_5', title: 'Referral Master V', description: 'Refer 50 friends to join Gift Phase.', reward: 3500000, rewardType: 'PUCK', type: 'achievement', verificationType: 'referral', requiredCount: 50, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
+                          { id: 'ach_ref_6', title: 'Referral Master VI', description: 'Refer 100 friends to join Gift Phase.', reward: 10000000, rewardType: 'PUCK', type: 'achievement', verificationType: 'referral', requiredCount: 100, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
+                          { id: 'ach_game_1', title: 'Game Enthusiast I', description: 'Play 10 games in the Arena.', reward: 10000, rewardType: 'PUCK', type: 'achievement', verificationType: 'game', requiredCount: 10, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
+                          { id: 'ach_game_2', title: 'Game Enthusiast II', description: 'Play 50 games in the Arena.', reward: 60000, rewardType: 'PUCK', type: 'achievement', verificationType: 'game', requiredCount: 50, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
+                          { id: 'ach_game_3', title: 'Game Enthusiast III', description: 'Play 100 games in the Arena.', reward: 150000, rewardType: 'PUCK', type: 'achievement', verificationType: 'game', requiredCount: 100, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
+                          { id: 'ach_game_4', title: 'Game Enthusiast IV', description: 'Play 500 games in the Arena.', reward: 1000000, rewardType: 'PUCK', type: 'achievement', verificationType: 'game', requiredCount: 500, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
+                          { id: 'ach_game_5', title: 'Game Enthusiast V', description: 'Play 1000 games in the Arena.', reward: 2500000, rewardType: 'PUCK', type: 'achievement', verificationType: 'game', requiredCount: 1000, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
+                          { id: 'ach_win_1', title: 'Winner Circle I', description: 'Win 1 game in the Arena.', reward: 25000, rewardType: 'PUCK', type: 'achievement', verificationType: 'win', requiredCount: 1, color: '#059669', icon: 'Trophy', btn: 'Claim' },
+                          { id: 'ach_win_2', title: 'Winner Circle II', description: 'Win 5 games in the Arena.', reward: 150000, rewardType: 'PUCK', type: 'achievement', verificationType: 'win', requiredCount: 5, color: '#059669', icon: 'Trophy', btn: 'Claim' },
+                          { id: 'ach_win_3', title: 'Winner Circle III', description: 'Win 10 games in the Arena.', reward: 350000, rewardType: 'PUCK', type: 'achievement', verificationType: 'win', requiredCount: 10, color: '#059669', icon: 'Trophy', btn: 'Claim' },
+                          { id: 'ach_win_4', title: 'Winner Circle IV', description: 'Win 25 games in the Arena.', reward: 1000000, rewardType: 'PUCK', type: 'achievement', verificationType: 'win', requiredCount: 25, color: '#059669', icon: 'Trophy', btn: 'Claim' },
+                          { id: 'ach_win_5', title: 'Winner Circle V', description: 'Win 50 games in the Arena.', reward: 2500000, rewardType: 'PUCK', type: 'achievement', verificationType: 'win', requiredCount: 50, color: '#059669', icon: 'Trophy', btn: 'Claim' },
+                          { id: 'ach_dep_1', title: 'High Roller I', description: 'Deposit 1 TON into your balance.', reward: 100000, rewardType: 'PUCK', type: 'achievement', verificationType: 'deposit', requiredCount: 1, color: '#2563EB', icon: 'Wallet', btn: 'Claim' },
+                          { id: 'ach_dep_2', title: 'High Roller II', description: 'Deposit 5 TON into your balance.', reward: 600000, rewardType: 'PUCK', type: 'achievement', verificationType: 'deposit', requiredCount: 5, color: '#2563EB', icon: 'Wallet', btn: 'Claim' },
+                          { id: 'ach_dep_3', title: 'High Roller III', description: 'Deposit 10 TON into your balance.', reward: 1500000, rewardType: 'PUCK', type: 'achievement', verificationType: 'deposit', requiredCount: 10, color: '#2563EB', icon: 'Wallet', btn: 'Claim' },
+                          { id: 'ach_shop_1', title: 'Shopaholic I', description: 'Make 1 purchase in the Shop.', reward: 50000, rewardType: 'PUCK', type: 'achievement', verificationType: 'purchase', requiredCount: 1, color: '#D97706', icon: 'Store', btn: 'Claim' },
+                        ];
+                        try {
+                          for (const t of tasks) {
+                            await setDoc(doc(db, 'tasks', t.id), { ...t, createdAt: serverTimestamp() }, { merge: true });
+                          }
+                          WebApp.HapticFeedback.notificationOccurred('success');
+                          alert("20 Achievement tasks seeded successfully!");
+                        } catch (e) { console.error(e); }
+                      }
+                    }}
+                    className="px-4 py-2 bg-white/10 text-white/60 text-[10px] font-black uppercase rounded-lg border border-white/10 hover:bg-white/20 transition-all"
                   >
-                    {cat}
+                    Seed Tasks
                   </button>
-                ))}
+                )}
               </div>
 
               <button 
                 onClick={() => {
+                  const currentCat = adminTab === 'daily_tasks' ? 'daily' : adminTab === 'achievement_tasks' ? 'achievement' : 'partner';
                   setSelectedTaskForEdit({
                     id: `task_${Date.now()}`,
                     title: '',
                     description: '',
                     reward: 0,
                     rewardType: 'PUCK',
-                    type: taskFilter,
+                    type: currentCat,
                     verificationType: 'none',
                     link: '',
                     btn: 'Go',
@@ -1472,11 +1570,14 @@ const App = () => {
                 }}
                 className="w-full py-5 bg-rose-400 text-black font-black uppercase rounded-[24px] flex items-center justify-center gap-2 shadow-lg active:translate-y-1 transition-all"
               >
-                <Plus size={20} /> Add New Task
+                <Plus size={20} /> Add New {adminTab === 'daily_tasks' ? 'Daily' : adminTab === 'achievement_tasks' ? 'Achievement' : 'Partner'} Task
               </button>
 
               <div className="space-y-3">
-                {allTasks.filter(t => t.type === taskFilter && !t.deleted).map(task => (
+                {allTasks.filter(t => {
+                  const currentCat = adminTab === 'daily_tasks' ? 'daily' : adminTab === 'achievement_tasks' ? 'achievement' : 'partner';
+                  return t.type === currentCat && !t.deleted;
+                }).map(task => (
                   <button 
                     key={task.id} 
                     onClick={() => {
@@ -1881,7 +1982,8 @@ const App = () => {
           createdAt: serverTimestamp()
         });
         await updateDoc(doc(db, 'users', user.uid), {
-          balance: increment(amount)
+          balance: increment(amount),
+          totalDeposited: increment(amount)
         });
         alert(`Successfully deposited ${amount} TON!`);
       } catch (error) {
@@ -2000,27 +2102,35 @@ const App = () => {
           </div>
         </div>
         <div className="space-y-3">
-          {players.map((p, i) => (
-            <div key={i} className="p-3.5 rounded-[24px] flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[1px] transition-all" style={{ background: `linear-gradient(to right, ${p.accentColor}, ${p.color})` }}>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <img src={p.avatar} className="w-10 h-10 rounded-full border-[1.5px] border-white/20 shadow-md" alt="" referrerPolicy="no-referrer" />
-                  {p.isMe && <div className="absolute -top-1 -right-1 bg-white text-black text-[7px] font-black px-1 rounded-full border border-black/10">YOU</div>}
+          {players.map((p, i) => {
+            const frame = PROFILE_FRAMES.find(f => f.id === p.selectedFrame);
+            return (
+              <div key={i} className="p-3.5 rounded-[24px] flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[1px] transition-all relative overflow-hidden" style={{ background: `linear-gradient(to right, ${p.accentColor}, ${p.color})` }}>
+                {frame && frame.id !== 'none' && (
+                  <div className="absolute inset-0 opacity-20 pointer-events-none animate-pulse" style={{ background: `radial-gradient(circle at center, ${frame.color}, transparent)` }}></div>
+                )}
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="relative">
+                    <ProfileFrame frameId={p.selectedFrame} className="w-10 h-10">
+                      <img src={p.avatar} className="w-full h-full rounded-full border-[1.5px] border-white/20 shadow-md" alt="" referrerPolicy="no-referrer" />
+                    </ProfileFrame>
+                    {p.isMe && <div className="absolute -top-1 -right-1 bg-white text-black text-[7px] font-black px-1 rounded-full border border-black/10">YOU</div>}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[12px] font-black text-white uppercase tracking-tight">{p.username}</span>
+                    <span className="text-[8px] font-bold text-white/50 uppercase tracking-widest">Arena Participant</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[12px] font-black text-white uppercase tracking-tight">{p.username}</span>
-                  <span className="text-[8px] font-bold text-white/50 uppercase tracking-widest">Arena Participant</span>
+                <div className="flex flex-col items-end relative z-10">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[14px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
+                    <span className="text-[10px] font-black text-white/60 uppercase">∇</span>
+                  </div>
+                  <span className="text-[8px] font-bold text-white/40 uppercase">TON</span>
                 </div>
               </div>
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-1">
-                  <span className="text-[14px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
-                  <span className="text-[10px] font-black text-white/60 uppercase">∇</span>
-                </div>
-                <span className="text-[8px] font-bold text-white/40 uppercase">TON</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {players.length === 0 && (
             <div className="py-10 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[32px]">
               <span className="text-white/10 font-black uppercase text-[10px] tracking-[0.2em]">No Active Bidders</span>
@@ -2033,9 +2143,6 @@ const App = () => {
 };
 
   const renderTaskCenter = () => {
-    const [verifyingTaskId, setVerifyingTaskId] = useState(null);
-    const [waitTimer, setWaitTimer] = useState(0);
-
     const tasksToShow = allTasks.filter(t => {
       const cat = taskCategory === 'achievements' ? 'achievement' : taskCategory === 'partners' ? 'partner' : 'daily';
       return t.type === cat && !t.deleted;
@@ -2055,7 +2162,7 @@ const App = () => {
     };
 
     const getIcon = (iconName) => {
-      const icons = { Trophy, Zap, Pencil, ArrowUp, Store, Gamepad2, ClipboardList, ChevronLeft, ChevronRight, ChevronDown, MoreVertical, X, Star, Settings, UserPlus, Bolt, Medal, Gift, Wallet, Save, Copy, Share2, History, Link, ArrowDownCircle, ArrowUpCircle, Plus, Globe, Twitter, Youtube, Send, Heart, Users };
+      const icons = { User, Trophy, Zap, Pencil, ArrowUp, Store, Gamepad2, ClipboardList, ChevronLeft, ChevronRight, ChevronDown, MoreVertical, X, Star, Settings, UserPlus, Bolt, Medal, Gift, Wallet, Save, Copy, Share2, History, Link, ArrowDownCircle, ArrowUpCircle, Plus, Globe, Twitter, Youtube, Send, Heart, Users };
       return icons[iconName] || Bolt;
     };
 
@@ -2341,10 +2448,12 @@ const App = () => {
           <>
             <div className="flex items-center gap-6 py-10 shrink-0 relative z-10">
               <div className="relative">
-                <div onClick={handleAdminTrigger} className="w-24 h-24 rounded-[28px] overflow-hidden border-[3px] border-white/10 shadow-2xl active:scale-95 transition-transform cursor-pointer">
-                  <img src={avatar} className="w-full h-full object-cover bg-[#1a1a1a]" referrerPolicy="no-referrer" />
+                <div onClick={handleAdminTrigger} className="w-24 h-24 rounded-[28px] overflow-hidden border-[3px] border-white/10 shadow-2xl active:scale-95 transition-transform cursor-pointer flex items-center justify-center">
+                  <ProfileFrame frameId={userData?.selectedFrame} className="w-full h-full" shape="square">
+                    <img src={avatar} className="w-full h-full object-cover bg-[#1a1a1a]" referrerPolicy="no-referrer" />
+                  </ProfileFrame>
                 </div>
-                <button className="absolute -bottom-2 -right-2 bg-[#2563EB] p-2 rounded-xl border-t border-white/30 shadow-lg text-white">
+                <button onClick={() => setIsFrameSelectorOpen(true)} className="absolute -bottom-2 -right-2 bg-[#2563EB] p-2 rounded-xl border-t border-white/30 shadow-lg text-white active:scale-90 transition-transform">
                   <Settings size={14} fill="currentColor" />
                 </button>
               </div>
@@ -2413,12 +2522,141 @@ const App = () => {
       `}</style>
       <SparkleBackground />
       {isAdminPanelOpen && <AdminPanel />}
+      {isFrameSelectorOpen && (
+        <div className="fixed inset-0 z-[600] bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
+          <div className="w-full max-w-md bg-[#0a0a0a] rounded-[40px] border border-white/10 p-8 space-y-6 animate-in slide-in-from-bottom duration-300 overflow-y-auto max-h-[85vh] no-scrollbar">
+            <div className="flex justify-between items-center">
+              <h3 className="text-2xl font-black text-white uppercase italic">Profile Frames</h3>
+              <button onClick={() => setIsFrameSelectorOpen(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {PROFILE_FRAMES.map(frame => {
+                const isUnlocked = isAdmin || userData?.unlockedFrames?.includes(frame.id) || frame.id === 'none';
+                const isSelected = userData?.selectedFrame === frame.id;
+                
+                return (
+                  <div 
+                    key={frame.id} 
+                    className={`p-4 rounded-[32px] border transition-all flex flex-col items-center gap-3 relative overflow-hidden ${isSelected ? 'bg-white/10 border-white/30' : 'bg-white/5 border-white/5'}`}
+                  >
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-20 flex items-center justify-center flex-col gap-2">
+                        <Bolt size={24} className="text-white/40" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{frame.price} PUCK</span>
+                        <button 
+                          onClick={async () => {
+                            if (puckBalance < frame.price) {
+                              alert("Insufficient PUCK balance!");
+                              return;
+                            }
+                            try {
+                              const userRef = doc(db, 'users', user.uid);
+                              await updateDoc(userRef, {
+                                puckBalance: increment(-frame.price),
+                                unlockedFrames: arrayUnion(frame.id)
+                              });
+                              setPuckBalance(prev => prev - frame.price);
+                              WebApp.HapticFeedback.notificationOccurred('success');
+                            } catch (e) { console.error(e); }
+                          }}
+                          className="px-4 py-1.5 bg-white text-black text-[9px] font-black uppercase rounded-full"
+                        >
+                          Unlock
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div className="w-16 h-16 relative">
+                      <ProfileFrame frameId={frame.id} className="w-full h-full">
+                        <img src={user?.photoURL || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop"} className="w-full h-full object-cover rounded-full" alt="" />
+                      </ProfileFrame>
+                    </div>
+                    
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] font-black text-white uppercase tracking-tight">{frame.name}</span>
+                      {isUnlocked && (
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const userRef = doc(db, 'users', user.uid);
+                              await updateDoc(userRef, { selectedFrame: frame.id });
+                              WebApp.HapticFeedback.impactOccurred('medium');
+                            } catch (e) { console.error(e); }
+                          }}
+                          className={`mt-2 px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isSelected ? 'bg-cyan-400 text-black' : 'bg-white/10 text-white/40'}`}
+                        >
+                          {isSelected ? 'Selected' : 'Select'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 flex flex-col h-full overflow-hidden touch-pan-y relative z-10">
         {isGameLoaded && activeTab === 'arena' && renderArena()}
         {isGameLoaded && activeTab === 'tasks' && renderTaskCenter()}
         {isGameLoaded && activeTab === 'profile' && renderProfile()}
         {isGameLoaded && activeTab === 'rank' && renderRank()}
-        {isGameLoaded && activeTab === 'market' && <div className="flex-1 flex items-center justify-center text-[#444] font-black uppercase tracking-widest relative z-10">{t.comingSoon}</div>}
+        {isGameLoaded && activeTab === 'market' && (
+          <div className="flex-1 flex flex-col p-6 relative z-10 overflow-y-auto no-scrollbar pb-40">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-black text-white uppercase mb-1">{t.shop}</h1>
+              <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Upgrade your experience</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {[
+                { id: 'item_1', name: 'Starter Pack', price: 10000, type: 'PUCK', icon: <Gift size={24} /> },
+                { id: 'item_2', name: 'Pro Badge', price: 50000, type: 'PUCK', icon: <Medal size={24} /> },
+                { id: 'item_3', name: 'Elite Skin', price: 1, type: 'TON', icon: <Star size={24} /> },
+              ].map(item => (
+                <div key={item.id} className="p-5 rounded-[32px] bg-[#111] border-t border-white/5 shadow-xl flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-rose-400">{item.icon}</div>
+                    <div className="flex flex-col">
+                      <span className="text-white font-black text-sm uppercase">{item.name}</span>
+                      <span className="text-white/30 font-bold text-[10px] uppercase">{item.price} {item.type}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!user) return;
+                      const canAfford = item.type === 'TON' ? myBalance >= item.price : puckBalance >= item.price;
+                      if (!canAfford) {
+                        alert(`Insufficient ${item.type} balance!`);
+                        return;
+                      }
+                      
+                      try {
+                        const userRef = doc(db, 'users', user.uid);
+                        await updateDoc(userRef, {
+                          balance: item.type === 'TON' ? increment(-item.price) : increment(0),
+                          puckBalance: item.type === 'PUCK' ? increment(-item.price) : increment(0),
+                          shopPurchases: arrayUnion(item.name)
+                        });
+                        if (item.type === 'TON') setMyBalance(prev => prev - item.price);
+                        else setPuckBalance(prev => prev - item.price);
+                        
+                        WebApp.HapticFeedback.notificationOccurred('success');
+                        alert(`Successfully purchased ${item.name}!`);
+                      } catch (e) { console.error(e); }
+                    }}
+                    className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${white3DStyle}`}
+                  >
+                    Buy
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       {isGameLoaded && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-black/85 backdrop-blur-3xl border-t border-white/5 z-[100] pb-9 flex justify-around items-center font-sans h-24">
@@ -2428,7 +2666,7 @@ const App = () => {
           <div onClick={() => setActiveTab('rank')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'rank' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Trophy size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.rank}</span></div>
           <div onClick={() => setActiveTab('profile')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'profile' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}>
             <div className={`w-[38px] h-[38px] rounded-full overflow-hidden border-[2px] transition-all shadow-sm aspect-square flex items-center justify-center ${activeTab === 'profile' ? 'border-[#2563EB] grayscale-0' : 'border-white/10 grayscale opacity-50'}`}>
-              <img src={user?.photoURL || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop"} alt="Me" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <User size={22} className={activeTab === 'profile' ? 'text-[#2563EB]' : 'text-white/20'} />
             </div>
             <span className="text-[11px] font-bold uppercase font-sans">{t.profile}</span>
           </div>
