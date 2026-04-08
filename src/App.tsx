@@ -121,6 +121,15 @@ const DuckIcon = ({ size = 16, className = "" }) => (
   </div>
 );
 
+const TonIcon = ({ size = 16, className = "" }) => (
+  <div 
+    style={{ width: size, height: size, minWidth: size, minHeight: size }} 
+    className={`inline-flex items-center justify-center bg-gradient-to-b from-[#0088CC] to-[#005580] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),0_1px_2px_rgba(0,0,0,0.3)] border border-[#004466]/30 shrink-0 ${className}`}
+  >
+    <span style={{ fontSize: size * 0.6 }} className="text-white font-black leading-none select-none">T</span>
+  </div>
+);
+
 const PROFILE_FRAMES = [
   { id: 'none', name: 'Default', price: 0, color: 'transparent' },
   { id: 'btc', name: 'Bitcoin VIP', price: 5000000, color: '#F7931A', shadow: '0 0 40px rgba(247, 147, 26, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: '₿', gradient: 'linear-gradient(135deg, #F7931A, #FFAB40)' },
@@ -196,7 +205,8 @@ const TRANSLATIONS = {
     deposit: 'Deposit',
     withdrawal: 'Withdrawal',
     duckBalance: 'DUCK Balance',
-    inviteFriends: "Invite friends and earn 10% of their spending DUCK",
+    tonBalance: 'TON Balance',
+    inviteFriends: "Invite friends and earn 10% of their spending TON",
     copy: 'Copy',
     share: 'Share',
     recentActivity: 'Recent Activity',
@@ -227,7 +237,8 @@ const TRANSLATIONS = {
     deposit: 'Депозит',
     withdrawal: 'Вывод',
     duckBalance: 'Баланс DUCK',
-    inviteFriends: 'Приглашайте друзей и получайте 10% от их трат DUCK',
+    tonBalance: 'Баланс TON',
+    inviteFriends: 'Приглашайте друзей и получайте 10% от их трат TON',
     copy: 'Копировать',
     share: 'Поделиться',
     recentActivity: 'Последние действия',
@@ -258,7 +269,8 @@ const TRANSLATIONS = {
     deposit: 'واریز',
     withdrawal: 'برداشت',
     duckBalance: 'موجودی DUCK',
-    inviteFriends: 'دوستان خود را دعوت کنید و ۱۰٪ از هزینه‌های DUCK آن‌ها را دریافت کنید',
+    tonBalance: 'موجودی TON',
+    inviteFriends: 'دوستان خود را دعوت کنید و ۱۰٪ از هزینه‌های TON آن‌ها را دریافت کنید',
     copy: 'کپی',
     share: 'اشتراک‌گذاری',
     recentActivity: 'فعالیت‌های اخیر',
@@ -289,7 +301,8 @@ const TRANSLATIONS = {
     deposit: 'Einzahlung',
     withdrawal: 'Auszahlung',
     duckBalance: 'DUCK Guthaben',
-    inviteFriends: 'Freunde einladen und 10% ihrer DUCK-Ausgaben verdienen',
+    tonBalance: 'TON Guthaben',
+    inviteFriends: 'Freunde einladen und 10% ihrer TON-Ausgaben verdienen',
     copy: 'Kopieren',
     share: 'Teilen',
     recentActivity: 'Letzte Aktivitäten',
@@ -311,28 +324,28 @@ const TRANSLATIONS = {
 const GUEST_DATA = [];
 
 const DAILY_TASKS = [
-  { id: 'd1', title: 'Follow our Twitter', reward: '50,000', icon: <Twitter size={20} />, btn: 'Follow' },
-  { id: 'd2', title: 'Subscribe YouTube', reward: '50,000', icon: <Youtube size={20} />, btn: 'Subscribe' },
-  { id: 'd3', title: 'Visit Website', reward: '25,000', icon: <Globe size={20} />, btn: 'Visit' },
-  { id: 'd4', title: 'Join Social Group', reward: '50,000', icon: <Send size={20} />, btn: 'Join' },
-  { id: 'd5', title: 'Join News Channel', reward: '50,000', icon: <Send size={20} />, btn: 'Join' },
+  { id: 'd1', title: 'Follow our Twitter', tonReward: 1000, duckReward: 50000, icon: <Twitter size={20} />, btn: 'Follow' },
+  { id: 'd2', title: 'Subscribe YouTube', tonReward: 1000, duckReward: 50000, icon: <Youtube size={20} />, btn: 'Subscribe' },
+  { id: 'd3', title: 'Visit Website', tonReward: 500, duckReward: 25000, icon: <Globe size={20} />, btn: 'Visit' },
+  { id: 'd4', title: 'Join Social Group', tonReward: 1000, duckReward: 50000, icon: <Send size={20} />, btn: 'Join' },
+  { id: 'd5', title: 'Join News Channel', tonReward: 1000, duckReward: 50000, icon: <Send size={20} />, btn: 'Join' },
 ];
 
 const ACHIEVEMENTS = [
-  { id: 'a1', title: 'Play 50 PvP Games', goal: 50, current: 50, reward: '100,000', btn: 'Claim' },
-  { id: 'a2', title: 'Invite 50 Friends', goal: 50, current: 5, reward: '500,000', btn: 'Claim' },
-  { id: 'a3', title: 'Win 50 Games', goal: 50, current: 8, reward: '200,000', btn: 'Claim' },
-  { id: 'a4', title: 'Deposit 1 DUCK', goal: 1, current: 1, reward: '100,000', btn: 'Claim' },
-  { id: 'a5', title: 'Deposit 5 DUCK', goal: 5, current: 0, reward: '500,000', btn: 'Claim' },
-  { id: 'a6', title: 'Play 100 Games', goal: 100, current: 12, reward: '250,000', btn: 'Claim' },
-  { id: 'a7', title: 'Win 100 Games', goal: 100, current: 8, reward: '500,000', btn: 'Claim' },
+  { id: 'a1', title: 'Play 50 PvP Games', goal: 50, current: 50, tonReward: 2000, duckReward: 100000, btn: 'Claim' },
+  { id: 'a2', title: 'Invite 50 Friends', goal: 50, current: 5, tonReward: 10000, duckReward: 500000, btn: 'Claim' },
+  { id: 'a3', title: 'Win 50 Games', goal: 50, current: 8, tonReward: 4000, duckReward: 200000, btn: 'Claim' },
+  { id: 'a4', title: 'Deposit 1 TON', goal: 1, current: 1, tonReward: 2000, duckReward: 100000, btn: 'Claim' },
+  { id: 'a5', title: 'Deposit 5 TON', goal: 5, current: 0, tonReward: 10000, duckReward: 500000, btn: 'Claim' },
+  { id: 'a6', title: 'Play 100 Games', goal: 100, current: 12, tonReward: 5000, duckReward: 250000, btn: 'Claim' },
+  { id: 'a7', title: 'Win 100 Games', goal: 100, current: 8, tonReward: 10000, duckReward: 500000, btn: 'Claim' },
 ];
 
 const PARTNER_TASKS = [
-  { id: 'p1', title: 'Follow Biz Tycoon', reward: '50,000', type: 'channel', btn: 'Join' },
-  { id: 'p2', title: 'Start Biz Tycoon', reward: '50,000', type: 'start', btn: 'Start' },
-  { id: 'p3', title: 'Play Biz Tycoon', reward: '75,000', type: 'game', btn: 'Play' },
-  { id: 'p4', title: 'Complete Level 3', reward: '100,000', type: 'game', btn: 'Complete' },
+  { id: 'p1', title: 'Follow Biz Tycoon', tonReward: 1000, duckReward: 50000, type: 'channel', btn: 'Join' },
+  { id: 'p2', title: 'Start Biz Tycoon', tonReward: 1000, duckReward: 50000, type: 'start', btn: 'Start' },
+  { id: 'p3', title: 'Play Biz Tycoon', tonReward: 1500, duckReward: 75000, type: 'game', btn: 'Play' },
+  { id: 'p4', title: 'Complete Level 3', tonReward: 2000, duckReward: 100000, type: 'game', btn: 'Complete' },
 ];
 
 const LEADERBOARD_DATA = [];
@@ -340,8 +353,8 @@ const LEADERBOARD_DATA = [];
 const ACTIVITIES = [
   { type: 'bid', val: <span className="flex items-center gap-1">10.00 <DuckIcon size={14} /></span>, date: '2 mins ago', icon: <Bolt size={16} /> },
   { type: 'invite', val: '@monk joined', date: '1 hour ago', icon: <UserPlus size={16} /> },
-  { type: 'deposit', val: '+50.0 DUCK', date: 'Yesterday', icon: <ArrowDownCircle size={16} /> },
-  { type: 'withdraw', val: '-20.0 DUCK', date: '2 days ago', icon: <ArrowUpCircle size={16} /> },
+  { type: 'deposit', val: '+5.0 TON', date: 'Yesterday', icon: <ArrowDownCircle size={16} /> },
+  { type: 'withdraw', val: '-2.0 TON', date: '2 days ago', icon: <ArrowUpCircle size={16} /> },
 ];
 
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/identicon/svg?seed=User";
@@ -349,7 +362,7 @@ const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/identicon/svg?seed=User";
 const PROMO_BANNERS = [
   { id: 1, title: 'WIN BIG IN ARENA', desc: 'Predict the puck & win DUCK daily!', grad: 'from-[#0891B2] to-[#2563EB]', icon: <Gamepad2 size={32} /> },
   { id: 2, title: 'INVITE & EARN 10%', desc: 'Get rewards for every friend spending.', grad: 'from-[#E11D48] to-[#C026D3]', icon: <UserPlus size={32} /> },
-  { id: 3, title: 'PUCK AIRDROP', desc: 'Complete all tasks for 1M PUCK bonus.', grad: 'from-[#7C3AED] to-[#4F46E5]', icon: <Gift size={32} /> },
+  { id: 3, title: 'TON AIRDROP', desc: 'Complete all tasks for 1M TON bonus.', grad: 'from-[#7C3AED] to-[#4F46E5]', icon: <Gift size={32} /> },
 ];
 
 // --- ERROR HANDLING ---
@@ -552,7 +565,7 @@ const App = () => {
   const [winner, setWinner] = useState(null);
   const [persistentWinner, setPersistentWinner] = useState(null);
   const [myBalance, setMyBalance] = useState(0);
-  const [puckBalance, setPuckBalance] = useState(0);
+  const [tonBalance, setTonBalance] = useState(0);
   const [popupTimeLeft, setPopupTimeLeft] = useState(5);
   const [completedTaskIds, setCompletedTaskIds] = useState([]);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -607,7 +620,7 @@ const App = () => {
             const data = snap.data();
             setUserData(data);
             setMyBalance(data.balance || 0);
-            setPuckBalance(data.puckBalance || 0);
+            setTonBalance(data.tonBalance || 0);
             setCompletedTaskIds(data.completedTasks || []);
             const ADMIN_TG_IDS = [6686954447, 1678112785, 5968063026];
             const isTgAdmin = tgUser && ADMIN_TG_IDS.includes(tgUser.id);
@@ -641,7 +654,7 @@ const App = () => {
               username: tgUser ? `@${tgUser.username || tgUser.first_name}` : `User_${firebaseUser.uid.slice(0, 5)}`,
               avatar: tgUser?.photo_url || DEFAULT_AVATAR,
               balance: 10.0,
-              puckBalance: 100000,
+              tonBalance: 1000,
               wins: 0,
               volume: 0,
               completedTasks: [],
@@ -1212,28 +1225,39 @@ const App = () => {
 
   const handleTaskClick = async (taskId) => {
     if (!taskId || completedTaskIds.includes(taskId) || !user) return;
-    const task = allTasks.find(t => t.id === taskId);
+    const task = allTasks.find(t => t.id === taskId) || 
+                 DAILY_TASKS.find(t => t.id === taskId) || 
+                 ACHIEVEMENTS.find(t => t.id === taskId) || 
+                 PARTNER_TASKS.find(t => t.id === taskId);
+                 
     if (task) {
-      const reward = parseFloat(task.reward);
+      const duckReward = parseFloat(task.duckReward || task.reward || "0");
+      const tonReward = parseFloat(task.tonReward || "0");
+      
       setCompletedTaskIds(prev => [...prev, taskId]);
       
       const updateData: any = {
         completedTasks: arrayUnion(taskId)
       };
       
-      if (task.rewardType === 'DUCK') {
-        setMyBalance(prev => prev + reward);
-        updateData.balance = increment(reward);
-      } else {
-        setPuckBalance(prev => prev + reward);
-        updateData.puckBalance = increment(reward);
+      if (duckReward > 0) {
+        setMyBalance(prev => prev + duckReward);
+        updateData.balance = increment(duckReward);
+      }
+      
+      if (tonReward > 0) {
+        setTonBalance(prev => prev + tonReward);
+        updateData.tonBalance = increment(tonReward);
       }
       
       try {
         await updateDoc(doc(db, 'users', user.uid), updateData);
-        await updateDoc(doc(db, 'tasks', taskId), {
-          completedCount: increment(1)
-        });
+        // Only update task completion count if it's a global task from DB
+        if (allTasks.find(t => t.id === taskId)) {
+          await updateDoc(doc(db, 'tasks', taskId), {
+            completedCount: increment(1)
+          });
+        }
         WebApp.HapticFeedback.notificationOccurred('success');
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
@@ -1503,8 +1527,8 @@ const App = () => {
                     <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Puck Balance</label>
                     <input 
                       type="number" 
-                      value={selectedUserForEdit.puckBalance}
-                      onChange={(e) => setSelectedUserForEdit({ ...selectedUserForEdit, puckBalance: parseInt(e.target.value) })}
+                      value={selectedUserForEdit.tonBalance}
+                      onChange={(e) => setSelectedUserForEdit({ ...selectedUserForEdit, tonBalance: parseInt(e.target.value) })}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
                     />
                   </div>
@@ -1536,7 +1560,7 @@ const App = () => {
                     try {
                       await updateDoc(doc(db, 'users', selectedUserForEdit.uid), {
                         balance: selectedUserForEdit.balance,
-                        puckBalance: selectedUserForEdit.puckBalance,
+                        tonBalance: selectedUserForEdit.tonBalance,
                         totalDeposited: selectedUserForEdit.totalDeposited || 0,
                         totalWithdrawn: selectedUserForEdit.totalWithdrawn || 0,
                         referralsCount: selectedUserForEdit.referralsCount || 0
@@ -2136,7 +2160,7 @@ const App = () => {
     return (
     <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar pb-40 relative font-sans overscroll-contain z-10 pt-12">
       <div className="flex justify-between items-center p-4 pt-6 gap-3 shrink-0">
-        <div className={`px-3 py-2.5 rounded-full flex-1 flex items-center justify-center gap-1.5 min-w-0 font-sans ${premium3DStyle}`}><span className="text-[14px]">🪙</span><span className="text-[14px] font-black uppercase">{formatCurrency(puckBalance)} PUCK</span></div>
+        <div className={`px-3 py-2.5 rounded-full flex-1 flex items-center justify-center gap-1.5 min-w-0 font-sans ${premium3DStyle}`}><TonIcon size={18} /><span className="text-[14px] font-black uppercase">{formatCurrency(tonBalance)} TON</span></div>
         <div className="bg-black/40 px-3 py-2 rounded-full border border-white/5 flex items-center gap-2 shrink-0 font-sans"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div><span className="text-[11px] font-bold text-gray-300">117 online</span></div>
         <div className={`px-3 py-2.5 rounded-full flex-1 flex items-center justify-center gap-2 min-w-0 font-sans ${premium3DStyle}`}><DuckIcon size={18} /><span className="text-[14px] font-black uppercase">{myBalance.toFixed(0)} DUCK</span></div>
       </div>
@@ -2459,9 +2483,25 @@ const App = () => {
                   <div className="w-10 h-10 rounded-2xl bg-black/20 flex items-center justify-center text-white">{displayIcon}</div>
                   <div className="flex flex-col">
                     <span className="text-white font-black text-[13px] uppercase truncate max-w-[140px]">{task.title}</span>
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-white/70">
-                      <Zap size={10} fill="currentColor" />
-                      <span>{task.reward} {task.rewardType}</span>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-white/70">
+                      {task.tonReward > 0 && (
+                        <div className="flex items-center gap-1">
+                          <TonIcon size={12} />
+                          <span>{task.tonReward.toLocaleString()} TON</span>
+                        </div>
+                      )}
+                      {task.duckReward > 0 && (
+                        <div className="flex items-center gap-1">
+                          <DuckIcon size={12} />
+                          <span>{task.duckReward.toLocaleString()} DUCK</span>
+                        </div>
+                      )}
+                      {!task.tonReward && !task.duckReward && task.reward && (
+                        <div className="flex items-center gap-1">
+                          <Zap size={10} fill="currentColor" />
+                          <span>{task.reward} {task.rewardType}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2706,20 +2746,20 @@ const App = () => {
                     {!isUnlocked && (
                       <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-20 flex items-center justify-center flex-col gap-2">
                         <Bolt size={24} className="text-white/40" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{frame.price} PUCK</span>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{frame.price} TON</span>
                         <button 
                           onClick={async () => {
-                            if (puckBalance < frame.price) {
-                              alert("Insufficient PUCK balance!");
+                            if (tonBalance < frame.price) {
+                              alert("Insufficient TON balance!");
                               return;
                             }
                             try {
                               const userRef = doc(db, 'users', user.uid);
                               await updateDoc(userRef, {
-                                puckBalance: increment(-frame.price),
+                                tonBalance: increment(-frame.price),
                                 unlockedFrames: arrayUnion(frame.id)
                               });
-                              setPuckBalance(prev => prev - frame.price);
+                              setTonBalance(prev => prev - frame.price);
                               WebApp.HapticFeedback.notificationOccurred('success');
                             } catch (e) { console.error(e); }
                           }}
@@ -2776,11 +2816,11 @@ const App = () => {
             
             <div className="grid grid-cols-2 gap-4">
               {[
-                { id: 'pack_bnb', frameId: 'bnb', name: 'BNB SPECIAL', pucks: 100000, price: 1, color: '#F3BA2F' },
-                { id: 'pack_sol', frameId: 'sol', name: 'SOLANA ELITE', pucks: 300000, price: 3, color: '#14F195' },
-                { id: 'pack_duck', frameId: 'duck', name: 'DUCK PREMIUM', pucks: 500000, price: 5, color: '#FFD700' },
-                { id: 'pack_eth', frameId: 'eth', name: 'ETH LEGEND', pucks: 1000000, price: 7, color: '#627EEA' },
-                { id: 'pack_btc', frameId: 'btc', name: 'BTC MYTHIC', pucks: 2000000, price: 10, color: '#F7931A' },
+                { id: 'pack_bnb', frameId: 'bnb', name: 'BNB SPECIAL', ducks: 100000, price: 500, color: '#F3BA2F' },
+                { id: 'pack_sol', frameId: 'sol', name: 'SOLANA ELITE', ducks: 300000, price: 1500, color: '#14F195' },
+                { id: 'pack_duck', frameId: 'duck', name: 'DUCK PREMIUM', ducks: 500000, price: 2500, color: '#FFD700' },
+                { id: 'pack_eth', frameId: 'eth', name: 'ETH LEGEND', ducks: 1000000, price: 5000, color: '#627EEA' },
+                { id: 'pack_btc', frameId: 'btc', name: 'BTC MYTHIC', ducks: 2000000, price: 10000, color: '#F7931A' },
               ].map(pack => (
                 <div key={pack.id} className="relative group">
                   <div className="absolute -inset-0.5 bg-gradient-to-b from-white/20 to-transparent rounded-[24px] blur-[1px]"></div>
@@ -2812,32 +2852,32 @@ const App = () => {
                       <button 
                         onClick={async () => {
                           if (!user) return;
-                          if (myBalance < pack.price) {
-                            alert("Insufficient DUCK balance!");
+                          if (tonBalance < pack.price) {
+                            alert("Insufficient TON balance!");
                             return;
                           }
                           
                           try {
                             const userRef = doc(db, 'users', user.uid);
                             await updateDoc(userRef, {
-                              balance: increment(-pack.price),
-                              puckBalance: increment(pack.pucks),
+                              tonBalance: increment(-pack.price),
+                              balance: increment(pack.ducks),
                               unlockedFrames: arrayUnion(pack.frameId),
                               shopPurchases: arrayUnion(pack.name)
                             });
-                            setMyBalance(prev => prev - pack.price);
-                            setPuckBalance(prev => prev + pack.pucks);
+                            setTonBalance(prev => prev - pack.price);
+                            setMyBalance(prev => prev + pack.ducks);
                             
                             WebApp.HapticFeedback.notificationOccurred('success');
-                            alert(`Successfully purchased ${pack.name}! You received ${pack.pucks.toLocaleString()} PUCK and the VIP frame.`);
+                            alert(`Successfully purchased ${pack.name}! You received ${pack.ducks.toLocaleString()} DUCK and the VIP frame.`);
                           } catch (e) { console.error(e); }
                         }}
                         className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-1.5 ${white3DStyle}`}
                       >
-                        <DuckIcon size={18} />
-                        <span className="text-sm uppercase">{pack.price.toFixed(2)} DUCK</span>
+                        <TonIcon size={18} />
+                        <span className="text-sm uppercase">{pack.price.toLocaleString()} TON</span>
                       </button>
-                      <span className="text-[9px] font-black text-white/90 mt-2 bg-black/20 px-2 py-0.5 rounded-full border border-white/10">+{pack.pucks.toLocaleString()} PUCK</span>
+                      <span className="text-[9px] font-black text-white/90 mt-2 bg-black/20 px-2 py-0.5 rounded-full border border-white/10">+{pack.ducks.toLocaleString()} DUCK</span>
                     </div>
                   </div>
                 </div>

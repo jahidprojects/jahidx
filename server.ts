@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,16 +14,39 @@ async function startServer() {
   app.use(express.json());
 
   // Dynamic TON Connect Manifest
+  app.options("/tonconnect-manifest.json", (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.sendStatus(204);
+  });
+
   app.get("/tonconnect-manifest.json", (req, res) => {
+    // Use APP_URL if available, otherwise fallback to dynamic construction
     const host = req.get('host');
     const protocol = req.get('x-forwarded-proto') || req.protocol;
-    const origin = `${protocol}://${host}`;
+    let origin = process.env.APP_URL || `${protocol}://${host}`;
     
-    res.json({
+    // Force https and remove trailing slash
+    origin = origin.replace('http://', 'https://');
+    if (origin.endsWith('/')) {
+      origin = origin.slice(0, -1);
+    }
+    
+    // Set headers for TON Connect SDK
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Content-Type', 'application/json');
+    
+    res.send(JSON.stringify({
       url: origin,
       name: "Gift Phase V2",
       iconUrl: "https://api.dicebear.com/7.x/identicon/svg?seed=GiftPhase"
-    });
+    }));
   });
 
   // Telegram Verification API
