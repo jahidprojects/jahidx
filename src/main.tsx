@@ -4,10 +4,8 @@ import { TonConnectUIProvider } from '@tonconnect/ui-react';
 import App from './App.tsx';
 import './index.css';
 
-// Use absolute URL for manifest to avoid fetch errors in some contexts
-// Ensure we use https as TON SDK requires it for manifest in most cases
-const origin = window.location.origin.replace('http://', 'https://');
-const manifestUrl = `${origin}/tonconnect-manifest.json`;
+// Use relative URL for manifest to ensure it resolves correctly against the current origin
+const manifestUrl = '/tonconnect-manifest.json';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

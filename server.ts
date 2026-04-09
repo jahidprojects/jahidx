@@ -28,6 +28,9 @@ async function startServer() {
     let origin = process.env.APP_URL || `${protocol}://${host}`;
     
     // Force https and remove trailing slash
+    if (!origin.startsWith('http')) {
+      origin = `${protocol}://${origin}`;
+    }
     origin = origin.replace('http://', 'https://');
     if (origin.endsWith('/')) {
       origin = origin.slice(0, -1);
@@ -38,15 +41,12 @@ async function startServer() {
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Content-Type', 'application/json');
     
-    res.send(JSON.stringify({
+    res.json({
       url: origin,
       name: "Gift Phase V2",
-      iconUrl: "https://api.dicebear.com/7.x/identicon/svg?seed=GiftPhase"
-    }));
+      iconUrl: "https://i.ibb.co/Z6z1QZ3w/11656.jpg"
+    });
   });
 
   // Telegram Verification API
