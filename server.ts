@@ -25,13 +25,27 @@ async function startServer() {
     // Use APP_URL if available, otherwise fallback to dynamic construction
     const host = req.get('host');
     const protocol = req.get('x-forwarded-proto') || req.protocol;
-    let origin = process.env.APP_URL || `${protocol}://${host}`;
+    
+    // Try to get origin from Referer or Host
+    let origin = process.env.APP_URL;
+    if (!origin) {
+      const referer = req.get('referer');
+      if (referer) {
+        try {
+          const refUrl = new URL(referer);
+          origin = refUrl.origin;
+        } catch (e) {
+          origin = `${protocol}://${host}`;
+        }
+      } else {
+        origin = `${protocol}://${host}`;
+      }
+    }
     
     // Force https and remove trailing slash
-    if (!origin.startsWith('http')) {
-      origin = `${protocol}://${origin}`;
+    if (origin.startsWith('http://')) {
+      origin = origin.replace('http://', 'https://');
     }
-    origin = origin.replace('http://', 'https://');
     if (origin.endsWith('/')) {
       origin = origin.slice(0, -1);
     }
@@ -41,6 +55,7 @@ async function startServer() {
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Content-Type', 'application/json');
     
     res.json({
       url: origin,

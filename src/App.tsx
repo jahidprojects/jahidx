@@ -134,11 +134,6 @@ const TonIcon = ({ size = 16, className = "" }) => (
 
 const PROFILE_FRAMES = [
   { id: 'none', name: 'Default', price: 0, color: 'transparent' },
-  { id: 'btc', name: 'Bitcoin VIP', price: 5000000, color: '#F7931A', shadow: '0 0 40px rgba(247, 147, 26, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: '₿', gradient: 'linear-gradient(135deg, #F7931A, #FFAB40)' },
-  { id: 'eth', name: 'Ethereum VIP', price: 4000000, color: '#627EEA', shadow: '0 0 40px rgba(98, 126, 234, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'Ξ', gradient: 'linear-gradient(135deg, #627EEA, #8C8CFF)' },
-  { id: 'duck', name: 'DUCK VIP', price: 3000000, color: '#FFD700', shadow: '0 0 40px rgba(255, 215, 0, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: '🦆', gradient: 'linear-gradient(135deg, #FFD700, #FFA500)' },
-  { id: 'sol', name: 'Solana VIP', price: 2500000, color: '#14F195', shadow: '0 0 40px rgba(20, 241, 149, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'S', gradient: 'linear-gradient(135deg, #14F195, #9945FF)' },
-  { id: 'bnb', name: 'Binance VIP', price: 2000000, color: '#F3BA2F', shadow: '0 0 40px rgba(243, 186, 47, 0.8), inset 0 0 20px rgba(255,255,255,0.4)', crypto: 'B', gradient: 'linear-gradient(135deg, #F3BA2F, #FFD700)' },
 ];
 
 const ProfileFrame = ({ frameId, children, className = "w-full h-full", shape = "circle" }) => {
@@ -565,9 +560,14 @@ const formatCurrency = (val) => {
 };
 
 const formatCurrencySimple = (val) => {
-  if (val >= 1000000) return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (val >= 1000) return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-  return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  if (val === undefined || val === null) return '0';
+  const absoluteVal = Math.max(0, val);
+  if (absoluteVal >= 1000000) return (absoluteVal / 1000000).toFixed(1) + 'M';
+  if (absoluteVal >= 1000) return (absoluteVal / 1000).toFixed(1) + 'k';
+  if (absoluteVal < 100 && absoluteVal > 0 && absoluteVal % 1 !== 0) {
+    return absoluteVal.toFixed(2).replace(/\.?0+$/, '');
+  }
+  return Math.floor(absoluteVal).toLocaleString();
 };
 
 const AdminPanel = ({ 
@@ -821,7 +821,7 @@ const AdminPanel = ({
                     <input 
                       type="number" 
                       value={selectedUserForEdit.balance}
-                      onChange={(e) => setSelectedUserForEdit({ ...selectedUserForEdit, balance: parseFloat(e.target.value) })}
+                      onChange={(e) => setSelectedUserForEdit({ ...selectedUserForEdit, balance: Math.max(0, Math.floor(parseFloat(e.target.value) || 0)) })}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-10 pr-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
                     />
                   </div>
@@ -830,11 +830,12 @@ const AdminPanel = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Puck Balance</label>
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">TON Balance</label>
                   <input 
                     type="number" 
+                    step="0.01"
                     value={selectedUserForEdit.tonBalance}
-                    onChange={(e) => setSelectedUserForEdit({ ...selectedUserForEdit, tonBalance: parseInt(e.target.value) })}
+                    onChange={(e) => setSelectedUserForEdit({ ...selectedUserForEdit, tonBalance: Math.max(0, parseFloat(e.target.value) || 0) })}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
                   />
                 </div>
@@ -974,9 +975,23 @@ const AdminPanel = ({
                     </div>
                     <div className="flex flex-col">
                       <span className="text-base font-black text-white">{task.title}</span>
-                      <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">
-                        {task.verificationType} • {task.reward} {task.rewardType}
-                      </span>
+                      <div className="flex items-center gap-3 mt-1">
+                        {task.duckReward > 0 && (
+                          <div className="flex items-center gap-1 text-[11px] text-rose-400 font-black uppercase tracking-widest bg-rose-400/10 px-2 py-0.5 rounded-lg border border-rose-400/20">
+                            {formatCurrency(task.duckReward)} <DuckIcon size={12} />
+                          </div>
+                        )}
+                        {task.tonReward > 0 && (
+                          <div className="flex items-center gap-1 text-[11px] text-rose-400 font-black uppercase tracking-widest bg-rose-400/10 px-2 py-0.5 rounded-lg border border-rose-400/20">
+                            {formatCurrency(task.tonReward)} <TonIcon size={14} />
+                          </div>
+                        )}
+                        {!(task.duckReward > 0) && !(task.tonReward > 0) && (
+                          <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">
+                            {task.verificationType} • {task.reward} {task.rewardType}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1027,24 +1042,23 @@ const AdminPanel = ({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Reward Amount</label>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">DUCK Reward</label>
                     <input 
                       type="number" 
-                      value={selectedTaskForEdit.reward}
-                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, reward: parseFloat(e.target.value) })}
+                      value={selectedTaskForEdit.duckReward || 0}
+                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, duckReward: Math.floor(parseFloat(e.target.value) || 0) })}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Reward Type</label>
-                    <select 
-                      value={selectedTaskForEdit.rewardType}
-                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, rewardType: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50 appearance-none"
-                    >
-                      <option value="TON">TON</option>
-                      <option value="DUCK">DUCK</option>
-                    </select>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">TON Reward</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={selectedTaskForEdit.tonReward || 0}
+                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, tonReward: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
+                    />
                   </div>
                 </div>
 
@@ -1939,8 +1953,13 @@ const App = () => {
 
   const addBid = async (amt, isMe = false, bot = null) => {
     if (status !== 'waiting' || amt <= 0) return;
-    if (isMe && myBalance <= 0) {
-      alert("You need a DUCK balance greater than 0 to bid!");
+    
+    // Ensure DUCK is always integer
+    const cleanAmt = Math.floor(amt);
+    if (cleanAmt < 1) return;
+
+    if (isMe && myBalance < cleanAmt) {
+      alert("Insufficient DUCK balance!");
       return;
     }
     
@@ -1948,7 +1967,8 @@ const App = () => {
       WebApp.HapticFeedback.impactOccurred('medium');
     }
 
-    const finalAmt = isMe && amt > myBalance ? myBalance : amt;
+    const finalAmt = isMe && cleanAmt > myBalance ? Math.floor(myBalance) : cleanAmt;
+    if (finalAmt < 1) return;
     
     const tgUser = WebApp.initDataUnsafe?.user;
     const n = isMe ? (tgUser ? `@${tgUser.username || tgUser.first_name}` : 'User') : bot.name;
@@ -1987,6 +2007,7 @@ const App = () => {
         if (isMe) {
           currentPlayers[existingIdx].selectedFrame = userData?.selectedFrame || 'none';
           currentPlayers[existingIdx].uid = user.uid;
+          currentPlayers[existingIdx].hasBoughtWithTon = userData?.hasBoughtWithTon || false;
         }
       } else if (currentPlayers.length < 15) {
         const pal = PLAYER_PALETTE[currentPlayers.length % PLAYER_PALETTE.length];
@@ -2000,7 +2021,8 @@ const App = () => {
           accentColor: pal.accent, 
           isMe, 
           id: Date.now() + Math.random(),
-          selectedFrame: isMe ? (userData?.selectedFrame || 'none') : 'none'
+          selectedFrame: isMe ? (userData?.selectedFrame || 'none') : 'none',
+          hasBoughtWithTon: isMe ? (userData?.hasBoughtWithTon || false) : false
         };
         currentPlayers.push(newPlayer);
       }
@@ -2024,8 +2046,14 @@ const App = () => {
                  PARTNER_TASKS.find(t => t.id === taskId);
                  
     if (task) {
-      const duckReward = parseFloat(task.duckReward || task.reward || "0");
-      const tonReward = parseFloat(task.tonReward || "0");
+      // Support both explicit rewards and legacy reward field
+      let duckReward = Math.floor(parseFloat(task.duckReward || "0"));
+      let tonReward = parseFloat(task.tonReward || "0");
+      
+      if (duckReward === 0 && tonReward === 0 && task.reward) {
+        if (task.rewardType === 'DUCK') duckReward = Math.floor(parseFloat(task.reward));
+        else tonReward = parseFloat(task.reward);
+      }
       
       setCompletedTaskIds(prev => [...prev, taskId]);
       
@@ -2034,12 +2062,12 @@ const App = () => {
       };
       
       if (duckReward > 0) {
-        setMyBalance(prev => prev + duckReward);
+        setMyBalance(prev => Math.max(0, prev + duckReward));
         updateData.balance = increment(duckReward);
       }
       
       if (tonReward > 0) {
-        setTonBalance(prev => prev + tonReward);
+        setTonBalance(prev => Math.max(0, prev + tonReward));
         updateData.tonBalance = increment(tonReward);
       }
       
@@ -2179,15 +2207,28 @@ const App = () => {
   const white3DStyle = `bg-white border-t border-white/50 shadow-[0_5px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-[0_2px_0_rgba(0,0,0,0.4)] transition-all duration-75 text-black font-black`;
 
   const formatCurrency = (val) => {
-    if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
-    if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
-    return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    if (val === undefined || val === null) return '0';
+    const absoluteVal = Math.max(0, val);
+    if (absoluteVal >= 1000000) return (absoluteVal / 1000000).toFixed(1) + 'M';
+    if (absoluteVal >= 1000) return (absoluteVal / 1000).toFixed(1) + 'k';
+    
+    // For TON (usually smaller numbers), show up to 2 decimals if they exist
+    // For DUCK (usually integers), show as integer
+    if (absoluteVal < 100 && absoluteVal > 0 && absoluteVal % 1 !== 0) {
+      return absoluteVal.toFixed(2).replace(/\.?0+$/, '');
+    }
+    return Math.floor(absoluteVal).toLocaleString();
   };
 
   const formatCurrencySimple = (val) => {
-    if (val >= 1000000) return (val / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (val >= 1000) return (val / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-    return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    if (val === undefined || val === null) return '0';
+    const absoluteVal = Math.max(0, val);
+    if (absoluteVal >= 1000000) return (absoluteVal / 1000000).toFixed(1) + 'M';
+    if (absoluteVal >= 1000) return (absoluteVal / 1000).toFixed(1) + 'k';
+    if (absoluteVal < 100 && absoluteVal > 0 && absoluteVal % 1 !== 0) {
+      return absoluteVal.toFixed(2).replace(/\.?0+$/, '');
+    }
+    return Math.floor(absoluteVal).toLocaleString();
   };
 
   const renderArena = () => {
@@ -2203,7 +2244,7 @@ const App = () => {
         <div className={`rounded-2xl p-2.5 flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)]`} style={{ background: `linear-gradient(to bottom, ${topWinner.accentColor}, ${topWinner.color})` }}><div className="flex items-center gap-2 min-w-0"><img src={topWinner.avatar} className="w-6 h-6 rounded-full border border-white/10" referrerPolicy="no-referrer" /><div className="flex flex-col min-w-0"><span className="text-[7px] text-white/60 font-black uppercase">{t.topWin}</span><span className="text-[11px] font-black text-white truncate akira-font">{topWinner.username}</span></div></div><div className="flex flex-col items-end shrink-0 ml-1"><span className="text-[12px] font-black text-white flex items-center gap-0.5 akira-font">{formatCurrency(topWinner.amount)} <DuckIcon size={20} /></span><span className="text-[7px] font-bold text-white/50">{topWinner.winChance}%</span></div></div>
         <div className={`rounded-2xl p-2.5 flex items-center justify-between border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)]`} style={{ background: `linear-gradient(to bottom, ${lastWinner.accentColor}, ${lastWinner.color})` }}><div className="flex items-center gap-2 min-w-0"><img src={lastWinner.avatar} className="w-6 h-6 rounded-full border border-white/10" referrerPolicy="no-referrer" /><div className="flex flex-col min-w-0"><span className="text-[7px] text-white/60 font-black uppercase">{t.lastWin}</span><span className="text-[11px] font-black text-white truncate akira-font">{lastWinner.username}</span></div></div><div className="flex flex-col items-end shrink-0 ml-1"><span className="text-[12px] font-black text-white flex items-center gap-0.5 akira-font">{formatCurrency(lastWinner.amount)} <DuckIcon size={20} /></span><span className="text-[7px] font-bold text-white/50">{lastWinner.winChance}%</span></div></div>
       </div>
-      <div className="px-4 flex justify-between items-end mb-3 px-1 font-sans shrink-0"><div><span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t.totalPool}</span><div className="text-cyan-400 font-black text-2xl tracking-tighter flex items-center gap-1 akira-font">{totalPot.toFixed(2)} <DuckIcon size={28} /></div></div><div className="text-right"><span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t.startingIn}</span><div className="font-mono text-2xl font-black">00:{timeLeft.toString().padStart(2, '0')}</div></div></div>
+      <div className="px-4 flex justify-between items-end mb-3 px-1 font-sans shrink-0"><div><span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t.totalPool}</span><div className="text-cyan-400 font-black text-2xl tracking-tighter flex items-center gap-1 akira-font">{formatCurrency(totalPot)} <DuckIcon size={28} /></div></div><div className="text-right"><span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t.startingIn}</span><div className="font-mono text-2xl font-black">00:{timeLeft.toString().padStart(2, '0')}</div></div></div>
       <div className="mx-4 relative group shrink-0"><div className="relative aspect-square rounded-[44px] overflow-hidden border-[6px] border-[#1a1a1a] bg-[#111] shadow-2xl mb-6">{players.length === 0 ? <div className="absolute inset-0 flex items-center justify-center text-gray-600 font-black uppercase text-center px-10 italic">{t.waiting}</div> : (<div className={`absolute inset-0 transition-transform duration-[450ms] ease-out ${isZoomed ? 'scale-[2.8]' : 'scale-100'}`} style={{ transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%` }}><StaticBoard territories={territories} winner={winner} /></div>)}<div className={`absolute z-[60] w-14 h-14 transition-opacity duration-300 pointer-events-none flex flex-col items-center justify-center ${status === 'drawing' || status === 'winner' ? 'opacity-100' : 'opacity-0'}`} style={{ left: `${selectorPos.x}%`, top: `${selectorPos.y}%`, transform: 'translate(-50%, -50%)' }}>{status === 'drawing' && hoverInfo.name && (<div key={hoverInfo.name} className={`absolute bg-black/95 backdrop-blur-xl px-4 py-2 rounded-full border border-white/20 flex items-center gap-2.5 shadow-2xl animate-in slide-in-from-bottom-1 fade-in duration-150 transition-all ${selectorPos.y < 25 ? 'top-14 translate-y-2' : '-top-14 -translate-y-2'}`}><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: hoverInfo.color }}></div><span className="text-[6.5px] font-black uppercase tracking-widest text-white">{hoverInfo.name}</span></div>)}{isAiming && <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: `rotate(${selectorAngle}deg)` }}><ArrowUp size={34} className="text-white -translate-y-9 animate-pulse" /></div>}<div className="w-full h-full bg-white/20 backdrop-blur-[3.5px] rounded-full border-[3.5px] border-white shadow-[0_0_30px_rgba(255,255,255,0.45)] relative flex items-center justify-center overflow-hidden"><div className="absolute w-full h-[1px] bg-white/40"></div><div className="absolute h-full w-[1px] bg-white/40"></div><div className="relative z-10 w-4 h-4 flex items-center justify-center"><div className="absolute w-4 h-[2.5px] bg-white shadow-[0_0_8px_white] text-transparent">.</div><div className="absolute h-4 w-[2.5px] bg-white shadow-[0_0_8px_white] text-transparent">.</div></div></div></div></div></div>
       <div className="px-4 w-full flex items-center gap-2 mb-8 mt-2 shrink-0 overflow-x-auto no-scrollbar py-2">
         <button 
@@ -2258,47 +2299,18 @@ const App = () => {
         </div>
         <div className="space-y-4">
           {players.map((p, i) => {
-            const frame = PROFILE_FRAMES.find(f => f.id === p.selectedFrame);
-            const isVIP = ['btc', 'eth', 'duck', 'sol', 'bnb'].includes(p.selectedFrame);
             const isMe = p.uid === user?.uid;
+            const isRich = p.hasBoughtWithTon;
             
-            if (isVIP) {
+            if (isRich) {
               return (
-                <div key={i} className="p-4 rounded-[32px] flex items-center justify-between border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] bg-[#0a0a0a]" style={{ background: `linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.4))` }}>
-                  {/* Animated Background Glow */}
-                  <div className="absolute inset-0 opacity-30 pointer-events-none transition-opacity group-hover:opacity-40" style={{ background: `radial-gradient(circle at 20% 50%, ${p.color}, transparent 85%)` }}></div>
+                <div key={i} className="p-4 rounded-[32px] flex items-center justify-between border border-yellow-500/30 shadow-[0_15px_40px_rgba(234,179,8,0.2)] relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-br from-[#1a1a1a] via-[#2a2a1a] to-[#1a1a1a]">
+                  {/* Golden Glow */}
+                  <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: `radial-gradient(circle at 20% 50%, #eab308, transparent 85%)` }}></div>
                   
-                  {/* VIP Crypto Animation */}
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-80">
-                    {[...Array(10)].map((_, idx) => (
-                      <div 
-                        key={idx}
-                        className="absolute text-5xl font-black italic select-none animate-coin-float"
-                        style={{
-                          left: `${Math.random() * 100}%`,
-                          top: `${Math.random() * 100}%`,
-                          animationDelay: `${idx * 0.4}s`,
-                          animationDuration: `${8 + Math.random() * 5}s`,
-                          color: (frame as any).color,
-                          filter: 'blur(0.5px)',
-                          opacity: 0.4
-                        }}
-                      >
-                        {(frame as any).crypto}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Shimmer Effect */}
-                  <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]"></div>
-                  </div>
-
                   <div className="flex items-center gap-4 relative z-10">
                     <div className="relative">
-                      <ProfileFrame frameId={p.selectedFrame} className="w-14 h-14">
-                        <img src={p.avatar} className="w-full h-full rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
-                      </ProfileFrame>
+                      <img src={p.avatar} className="w-14 h-14 rounded-full border-2 border-yellow-500/50 object-cover shadow-[0_0_15px_rgba(234,179,8,0.3)]" alt="" referrerPolicy="no-referrer" />
                       {isMe && <div className="absolute -top-1 -right-1 bg-cyan-400 text-black text-[8px] font-black px-2 py-0.5 rounded-full border border-black/20 shadow-lg z-20">YOU</div>}
                       <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-yellow-300 to-yellow-600 p-1 rounded-lg shadow-lg border border-white/20 animate-pulse z-20">
                         <Medal size={10} className="text-white" fill="currentColor" />
@@ -2306,21 +2318,21 @@ const App = () => {
                     </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-black text-white uppercase tracking-tight">{p.username}</span>
-                        <span className="text-[8px] font-black bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded-full border border-yellow-500/30 uppercase tracking-widest">VIP</span>
+                        <span className="text-[14px] font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200 uppercase tracking-tight akira-font">{p.username}</span>
+                        <span className="text-[8px] font-black bg-yellow-500 text-black px-1.5 py-0.5 rounded-full border border-yellow-500/30 uppercase tracking-widest shadow-[0_0_10px_rgba(234,179,8,0.5)]">VIP GOLD</span>
                       </div>
-                      <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.1em]">Arena Participant</span>
+                      <span className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-[0.1em]">Elite Supporter</span>
                     </div>
                   </div>
                   
                   <div className="flex flex-col items-end relative z-10">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[18px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
-                      <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                      <span className="text-[18px] font-black text-white tracking-tighter">{formatCurrency(p.bet)}</span>
+                      <div className="w-5 h-5 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
                         <DuckIcon size={12} />
                       </div>
                     </div>
-                    <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">DUCK</span>
+                    <span className="text-[9px] font-black text-yellow-500/30 uppercase tracking-widest">DUCK</span>
                   </div>
                 </div>
               );
@@ -2341,7 +2353,7 @@ const App = () => {
                 </div>
                 <div className="flex flex-col items-end">
                   <div className="flex items-center gap-1">
-                    <span className="text-[14px] font-black text-white tracking-tighter">{p.bet.toFixed(2)}</span>
+                    <span className="text-[14px] font-black text-white tracking-tighter">{formatCurrency(p.bet)}</span>
                     <DuckIcon size={12} />
                   </div>
                   <span className="text-[8px] font-bold text-white/40 uppercase">DUCK</span>
@@ -2557,19 +2569,19 @@ const App = () => {
                       {task.tonReward > 0 && (
                         <div className="flex items-center gap-1">
                           <TonIcon size={20} />
-                          <span className="leading-none">{task.tonReward.toLocaleString()}</span>
+                          <span className="leading-none">{formatCurrency(task.tonReward)}</span>
                         </div>
                       )}
                       {task.duckReward > 0 && (
                         <div className="flex items-center gap-1">
                           <DuckIcon size={20} />
-                          <span className="leading-none">{task.duckReward.toLocaleString()}</span>
+                          <span className="leading-none">{formatCurrency(task.duckReward)}</span>
                         </div>
                       )}
                       {!task.tonReward && !task.duckReward && task.reward && (
                         <div className="flex items-center gap-1">
-                          <Zap size={10} fill="currentColor" />
-                          <span className="leading-none">{task.reward}</span>
+                          {task.rewardType === 'DUCK' ? <DuckIcon size={20} /> : <Zap size={10} fill="currentColor" />}
+                          <span className="leading-none">{typeof task.reward === 'number' ? formatCurrency(task.reward) : task.reward}</span>
                         </div>
                       )}
                     </div>
@@ -2833,7 +2845,7 @@ const App = () => {
                                 tonBalance: increment(-frame.price),
                                 unlockedFrames: arrayUnion(frame.id)
                               });
-                              setTonBalance(prev => prev - frame.price);
+                              setTonBalance(prev => Math.max(0, prev - frame.price));
                               WebApp.HapticFeedback.notificationOccurred('success');
                             } catch (e) { console.error(e); }
                           }}
@@ -2932,10 +2944,12 @@ const App = () => {
                             await updateDoc(userRef, {
                               tonBalance: increment(-pack.price),
                               balance: increment(pack.ducks * 1000),
-                              shopPurchases: arrayUnion(`${(pack.ducks * 1000).toLocaleString()} DUCK PACK`)
+                              shopPurchases: arrayUnion(`${(pack.ducks * 1000).toLocaleString()} DUCK PACK`),
+                              hasBoughtWithTon: true
                             });
-                            setTonBalance(prev => prev - pack.price);
-                            setMyBalance(prev => prev + (pack.ducks * 1000));
+                            setTonBalance(prev => Math.max(0, prev - pack.price));
+                            setMyBalance(prev => Math.max(0, prev + (pack.ducks * 1000)));
+                            setUserData(prev => prev ? { ...prev, hasBoughtWithTon: true } : prev);
                             
                             WebApp.HapticFeedback.notificationOccurred('success');
                             alert(`Successfully purchased ${(pack.ducks * 1000).toLocaleString()} DUCK!`);
@@ -2975,8 +2989,8 @@ const App = () => {
               <div className="absolute top-8 right-8 z-10"><button onClick={() => resetGame()} className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center relative active:scale-90 transition-transform"><svg className="absolute inset-0 w-full h-full -rotate-90"><circle cx="24" cy="24" r="22" stroke="white" strokeWidth="3" fill="none" strokeOpacity="0.1" /><circle cx="24" cy="24" r="22" stroke="white" strokeWidth="3" fill="none" strokeDasharray={138.2} strokeDashoffset={138.2 - (popupTimeLeft / 5) * 138.2} className="transition-all duration-50" /></svg><X size={20} className="text-white relative z-10" /></button></div>
               <div className="text-center mb-4 mt-2"><h2 className="text-3xl font-black text-white uppercase">{persistentWinner?.username || 'Player'} won</h2></div>
               <div className="relative h-44 w-full flex items-center justify-center mb-4"><div className="absolute w-40 h-40 bg-gradient-radial from-[#2563EB]/40 via-[#4F46E5]/20 to-transparent blur-3xl animate-pulse"></div><div className="relative animate-bounce"><div className="relative"><Trophy size={90} className="text-yellow-400" /><div className="absolute -top-6 -right-6 animate-spin-slow"><Star size={40} fill="#FACC15" className="text-yellow-400" /></div></div></div></div>
-              <div className="flex items-center gap-3 mb-4 w-full justify-center"><div className="bg-[#1a1a1a] px-10 py-5 rounded-[28px] border border-white/5 shadow-inner flex flex-col items-center min-w-[200px]"><span className="text-3xl font-black text-white flex items-center gap-2">{persistentWinner?.totalPrize?.toFixed(2) || '0.00'} <DuckIcon size={28} /></span><span className="text-[10px] text-white/30 uppercase font-bold mt-1">Total Prize</span></div><div className="bg-[#2563EB] px-6 py-5 rounded-[24px] border-t border-white/30 shadow-xl flex flex-col items-center"><span className="text-lg font-black text-white italic">{(persistentWinner?.totalPrize && persistentWinner?.bet) ? (persistentWinner.totalPrize / persistentWinner.bet).toFixed(2) : '1.00'}x</span><span className="text-[10px] text-white/50 uppercase font-bold mt-1">ROI</span></div></div>
-              <div className="grid grid-cols-2 gap-4 w-full px-2"><div className="p-5 rounded-[32px] border-t border-white/15 shadow-xl flex flex-col items-center gap-2" style={{ background: `linear-gradient(to bottom, ${PLAYER_PALETTE[2].accent}, ${PLAYER_PALETTE[2].main})` }}><Trophy size={28} className="text-white/60" /><span className="text-sm font-black text-white flex items-center gap-1">{(persistentWinner?.bet || 0).toFixed(2)} <DuckIcon size={18} /></span><span className="text-[9px] text-white/50 uppercase font-bold">Winner's Bid</span></div><div className="p-5 rounded-[32px] border-t border-white/15 shadow-xl flex flex-col items-center gap-2" style={{ background: `linear-gradient(to bottom, #A5C9FF, #2563EB)` }}><Zap size={28} className="text-white/60" /><span className="text-sm font-black text-white">{(persistentWinner?.bet && persistentWinner?.totalPrize) ? ((persistentWinner.bet/persistentWinner.totalPrize)*100).toFixed(1) : '0.0'}%</span><span className="text-[9px] text-white/50 uppercase font-bold">Win Chance</span></div></div>
+              <div className="flex items-center gap-3 mb-4 w-full justify-center"><div className="bg-[#1a1a1a] px-10 py-5 rounded-[28px] border border-white/5 shadow-inner flex flex-col items-center min-w-[200px]"><span className="text-3xl font-black text-white flex items-center gap-2">{formatCurrency(persistentWinner?.totalPrize || 0)} <DuckIcon size={28} /></span><span className="text-[10px] text-white/30 uppercase font-bold mt-1">Total Prize</span></div><div className="bg-[#2563EB] px-6 py-5 rounded-[24px] border-t border-white/30 shadow-xl flex flex-col items-center"><span className="text-lg font-black text-white italic">{(persistentWinner?.totalPrize && persistentWinner?.bet) ? (persistentWinner.totalPrize / persistentWinner.bet).toFixed(2) : '1.00'}x</span><span className="text-[10px] text-white/50 uppercase font-bold mt-1">ROI</span></div></div>
+              <div className="grid grid-cols-2 gap-4 w-full px-2"><div className="p-5 rounded-[32px] border-t border-white/15 shadow-xl flex flex-col items-center gap-2" style={{ background: `linear-gradient(to bottom, ${PLAYER_PALETTE[2].accent}, ${PLAYER_PALETTE[2].main})` }}><Trophy size={28} className="text-white/60" /><span className="text-sm font-black text-white flex items-center gap-1">{formatCurrency(persistentWinner?.bet || 0)} <DuckIcon size={18} /></span><span className="text-[9px] text-white/50 uppercase font-bold">Winner's Bid</span></div><div className="p-5 rounded-[32px] border-t border-white/15 shadow-xl flex flex-col items-center gap-2" style={{ background: `linear-gradient(to bottom, #A5C9FF, #2563EB)` }}><Zap size={28} className="text-white/60" /><span className="text-sm font-black text-white">{(persistentWinner?.bet && persistentWinner?.totalPrize) ? ((persistentWinner.bet/persistentWinner.totalPrize)*100).toFixed(1) : '0.0'}%</span><span className="text-[9px] text-white/50 uppercase font-bold">Win Chance</span></div></div>
            </div>
         </div>
       )}
