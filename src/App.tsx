@@ -672,9 +672,7 @@ const AdminPanel = ({
       <div className="flex overflow-x-auto no-scrollbar border-b border-white/10 shrink-0 bg-white/5">
         {[
           { id: 'users', icon: <Users size={18} />, label: 'Users' },
-          { id: 'daily_tasks', icon: <CheckSquare size={18} />, label: 'Daily' },
-          { id: 'achievement_tasks', icon: <Trophy size={18} />, label: 'Achievements' },
-          { id: 'partner_tasks', icon: <Users size={18} />, label: 'Partners' },
+          { id: 'tasks', icon: <CheckSquare size={18} />, label: '' },
           { id: 'promo', icon: <Gift size={18} />, label: 'Promo' },
           { id: 'referral', icon: <Link size={18} />, label: 'Referral' },
           { id: 'analytics', icon: <BarChart2 size={18} />, label: 'Stats' },
@@ -887,52 +885,17 @@ const AdminPanel = ({
           </div>
         )}
 
-        {['daily_tasks', 'achievement_tasks', 'partner_tasks'].includes(adminTab) && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black text-white uppercase italic">
-                {adminTab === 'daily_tasks' ? 'Daily Tasks' : adminTab === 'achievement_tasks' ? 'Achievement Tasks' : 'Partner Tasks'}
-              </h3>
-              {adminTab === 'achievement_tasks' && (
-                <button 
-                  onClick={async () => {
-                    if (confirm("This will add 20 achievement tasks. Continue?")) {
-                      const tasks = [
-                        { id: 'ach_game_1', title: 'Play Arena 1 Match', description: 'Play 1 match in the Arena.', reward: 10000, rewardType: 'TON', type: 'achievement', verificationType: 'game', requiredCount: 1, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
-                        { id: 'ach_game_2', title: 'Play Arena 5 Matches', description: 'Play 5 matches in the Arena.', reward: 50000, rewardType: 'TON', type: 'achievement', verificationType: 'game', requiredCount: 5, color: '#7C3AED', icon: 'Gamepad2', btn: 'Claim' },
-                        { id: 'ach_win_1', title: 'Win Arena 1 Match', description: 'Win 1 match in the Arena.', reward: 25000, rewardType: 'TON', type: 'achievement', verificationType: 'win', requiredCount: 1, color: '#059669', icon: 'Trophy', btn: 'Claim' },
-                        { id: 'ach_win_2', title: 'Win Arena 5 Matches', description: 'Win 5 matches in the Arena.', reward: 150000, rewardType: 'TON', type: 'achievement', verificationType: 'win', requiredCount: 5, color: '#059669', icon: 'Trophy', btn: 'Claim' },
-                        { id: 'ach_dep_1', title: 'Deposit 1 DUCK', description: 'Deposit 1 DUCK into your balance.', reward: 100000, rewardType: 'TON', type: 'achievement', verificationType: 'deposit', requiredCount: 1, color: '#2563EB', icon: 'Wallet', btn: 'Claim' },
-                        { id: 'ach_ref_1', title: 'Invite a friend', description: 'Refer 1 friend to join Gift Phase.', reward: 50000, rewardType: 'TON', type: 'achievement', verificationType: 'referral', requiredCount: 1, color: '#E11D48', icon: 'UserPlus', btn: 'Claim' },
-                        { id: 'ach_shop_1', title: 'First Purchase in Shop', description: 'Make your first purchase in the Shop.', reward: 50000, rewardType: 'TON', type: 'achievement', verificationType: 'purchase', requiredCount: 1, color: '#D97706', icon: 'Store', btn: 'Claim' },
-                        { id: 'ach_shop_2', title: '5th Purchase in Shop', description: 'Make 5 purchases in the Shop.', reward: 250000, rewardType: 'TON', type: 'achievement', verificationType: 'purchase', requiredCount: 5, color: '#D97706', icon: 'Store', btn: 'Claim' },
-                      ];
-                      try {
-                        for (const t of tasks) {
-                          await setDoc(doc(db, 'tasks', t.id), { ...t, createdAt: serverTimestamp() }, { merge: true });
-                        }
-                        WebApp.HapticFeedback.notificationOccurred('success');
-                        alert("20 Achievement tasks seeded successfully!");
-                      } catch (e) { console.error(e); }
-                    }
-                  }}
-                  className="px-4 py-2 bg-white/10 text-white/60 text-[10px] font-black uppercase rounded-lg border border-white/10 hover:bg-white/20 transition-all"
-                >
-                  Seed Tasks
-                </button>
-              )}
-            </div>
-
+        {adminTab === 'tasks' && (
+          <div className="space-y-8">
             <button 
               onClick={() => {
-                const currentCat = adminTab === 'daily_tasks' ? 'daily' : adminTab === 'achievement_tasks' ? 'achievement' : 'partner';
                 setSelectedTaskForEdit({
                   id: `task_${Date.now()}`,
                   title: '',
                   description: '',
-                  reward: 0,
-                  rewardType: 'TON',
-                  type: currentCat,
+                  duckReward: 0,
+                  tonReward: 0,
+                  type: 'daily',
                   verificationType: 'none',
                   link: '',
                   btn: 'Go',
@@ -944,66 +907,72 @@ const AdminPanel = ({
               }}
               className="w-full py-5 bg-rose-400 text-black font-black uppercase rounded-[24px] flex items-center justify-center gap-2 shadow-lg active:translate-y-1 transition-all"
             >
-              <Plus size={20} /> Add New {adminTab === 'daily_tasks' ? 'Daily' : adminTab === 'achievement_tasks' ? 'Achievement' : 'Partner'} Task
+              <Plus size={20} /> Add New Task
             </button>
 
-            <div className="space-y-3">
-              {allTasks.filter(t => {
-                const currentCat = adminTab === 'daily_tasks' ? 'daily' : adminTab === 'achievement_tasks' ? 'achievement' : 'partner';
-                return t.type === currentCat && !t.deleted;
-              }).map(task => (
-                <button 
-                  key={task.id} 
-                  onClick={() => {
-                    setSelectedTaskForEdit(task);
-                    setIsAddingTask(false);
-                  }}
-                  className="w-full p-5 bg-white/5 rounded-[24px] border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all text-left"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
-                      {(() => {
-                        const title = (task.title || '').toLowerCase();
-                        const link = (task.link || '').toLowerCase();
-                        if (title.includes('deposit')) return <Wallet size={24} className="text-rose-400" />;
-                        if (link.includes('t.me')) {
-                          if (link.includes('bot')) return <Gamepad2 size={24} className="text-rose-400" />;
-                          return <Send size={24} className="text-rose-400 rotate-[-20deg]" />;
-                        }
-                        return <CheckSquare size={24} className="text-rose-400" />;
-                      })()}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-base font-black text-white">{task.title}</span>
-                      <div className="flex items-center gap-3 mt-1">
-                        {task.duckReward > 0 && (
-                          <div className="flex items-center gap-1 text-[11px] text-rose-400 font-black uppercase tracking-widest bg-rose-400/10 px-2 py-0.5 rounded-lg border border-rose-400/20">
-                            {formatCurrency(task.duckReward)} <DuckIcon size={12} />
+            {[
+              { id: 'daily', label: 'Daily Tasks' },
+              { id: 'achievement', label: 'Achievement' },
+              { id: 'partner', label: 'Partner' }
+            ].map(cat => (
+              <div key={cat.id} className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-lg font-black text-white uppercase italic tracking-wider">{cat.label}</h3>
+                  <span className="text-[10px] font-black text-white/20 uppercase">
+                    {allTasks.filter(t => t.type === cat.id && !t.deleted).length} Tasks
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {allTasks.filter(t => t.type === cat.id && !t.deleted).map(task => (
+                    <button 
+                      key={task.id} 
+                      onClick={() => {
+                        setSelectedTaskForEdit(task);
+                        setIsAddingTask(false);
+                      }}
+                      className="w-full p-5 bg-white/5 rounded-[24px] border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
+                          {(() => {
+                            const title = (task.title || '').toLowerCase();
+                            const link = (task.link || '').toLowerCase();
+                            if (title.includes('deposit')) return <Wallet size={24} className="text-rose-400" />;
+                            if (link.includes('t.me')) {
+                              if (link.includes('bot')) return <Gamepad2 size={24} className="text-rose-400" />;
+                              return <Send size={24} className="text-rose-400 rotate-[-20deg]" />;
+                            }
+                            return <CheckSquare size={24} className="text-rose-400" />;
+                          })()}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-base font-black text-white">{task.title}</span>
+                          <div className="flex items-center gap-3 mt-1">
+                            {task.duckReward > 0 && (
+                              <div className="flex items-center gap-1 text-[11px] text-rose-400 font-black uppercase tracking-widest bg-rose-400/10 px-2 py-0.5 rounded-lg border border-rose-400/20">
+                                {formatCurrency(task.duckReward)} <DuckIcon size={12} />
+                              </div>
+                            )}
+                            {task.tonReward > 0 && (
+                              <div className="flex items-center gap-1 text-[11px] text-rose-400 font-black uppercase tracking-widest bg-rose-400/10 px-2 py-0.5 rounded-lg border border-rose-400/20">
+                                {formatCurrency(task.tonReward)} <TonIcon size={14} />
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {task.tonReward > 0 && (
-                          <div className="flex items-center gap-1 text-[11px] text-rose-400 font-black uppercase tracking-widest bg-rose-400/10 px-2 py-0.5 rounded-lg border border-rose-400/20">
-                            {formatCurrency(task.tonReward)} <TonIcon size={14} />
-                          </div>
-                        )}
-                        {!(task.duckReward > 0) && !(task.tonReward > 0) && (
-                          <span className="text-[10px] text-white/30 uppercase font-black tracking-widest">
-                            {task.verificationType} • {task.reward} {task.rewardType}
-                          </span>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-sm font-black text-rose-400">{task.completedCount || 0}</div>
-                      <div className="text-[8px] text-white/20 uppercase font-black">Claims</div>
-                    </div>
-                    <ChevronRight size={20} className="text-white/20" />
-                  </div>
-                </button>
-              ))}
-            </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-sm font-black text-rose-400">{task.completedCount || 0}</div>
+                          <div className="text-[8px] text-white/20 uppercase font-black">Claims</div>
+                        </div>
+                        <ChevronRight size={20} className="text-white/20" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -1063,64 +1032,10 @@ const AdminPanel = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Task Configuration (Verification)</label>
-                  <select 
-                    value={selectedTaskForEdit.verificationType}
-                    onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, verificationType: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50 appearance-none"
-                  >
-                    <option value="none">No verification needed / Generic</option>
-                    <option value="channel">Telegram Channel</option>
-                    <option value="group">Telegram Group</option>
-                    <option value="bot">Telegram Bot / MiniApp</option>
-                    <option value="referral">Achievement: Referrals</option>
-                    <option value="game">Achievement: Games Played</option>
-                    <option value="win">Achievement: Wins</option>
-                    <option value="deposit">Achievement: DUCK Deposited</option>
-                    <option value="purchase">Achievement: Shop Purchases</option>
-                  </select>
-                </div>
-
-                {['referral', 'game', 'win', 'deposit', 'purchase'].includes(selectedTaskForEdit.verificationType) && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Required Count / Threshold</label>
-                    <input 
-                      type="number" 
-                      value={selectedTaskForEdit.requiredCount || 0}
-                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, requiredCount: parseFloat(e.target.value) })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Custom Color (Hex)</label>
-                    <input 
-                      type="text" 
-                      placeholder="#E11D48"
-                      value={selectedTaskForEdit.color || ''}
-                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, color: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Icon Name (Lucide)</label>
-                    <input 
-                      type="text" 
-                      placeholder="Send, Gamepad2, etc."
-                      value={selectedTaskForEdit.icon || ''}
-                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, icon: e.target.value })}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Category</label>
                   <select 
                     value={selectedTaskForEdit.type}
-                    onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, type: e.target.value })}
+                    onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, type: e.target.value, verificationType: 'none' })}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50 appearance-none"
                   >
                     <option value="daily">Daily Section</option>
@@ -1130,15 +1045,61 @@ const AdminPanel = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Link / URL</label>
-                  <input 
-                    type="text" 
-                    placeholder="https://t.me/..."
-                    value={selectedTaskForEdit.link}
-                    onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, link: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-rose-400/50"
-                  />
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Verification Type</label>
+                  <select 
+                    value={selectedTaskForEdit.verificationType}
+                    onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, verificationType: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50 appearance-none"
+                  >
+                    {selectedTaskForEdit.type === 'achievement' ? (
+                      <>
+                        <option value="none">Select verification type</option>
+                        <option value="referral">Invite friends</option>
+                        <option value="leaderboard">Leaderboard position</option>
+                        <option value="game">Game play required</option>
+                        <option value="purchase">Shop Buy required</option>
+                        <option value="win">Arena Match Win</option>
+                        <option value="played">Arena Match played</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="none">No verification required</option>
+                        <option value="channel">Verification with Channel</option>
+                        <option value="group">Verification with Group</option>
+                        <option value="bot">Telegram MiniApp</option>
+                      </>
+                    )}
+                  </select>
                 </div>
+
+                {selectedTaskForEdit.type === 'achievement' && selectedTaskForEdit.verificationType !== 'none' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">
+                      {selectedTaskForEdit.verificationType === 'referral' ? 'Referrals Required' : 
+                       selectedTaskForEdit.verificationType === 'purchase' ? 'Shop TON Spend Amount' :
+                       'Required Count / Value'}
+                    </label>
+                    <input 
+                      type="number" 
+                      value={selectedTaskForEdit.requiredCount || 0}
+                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, requiredCount: parseFloat(e.target.value) })}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
+                    />
+                  </div>
+                )}
+
+                {selectedTaskForEdit.type !== 'achievement' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Link / URL</label>
+                    <input 
+                      type="text" 
+                      placeholder="https://t.me/..."
+                      value={selectedTaskForEdit.link}
+                      onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, link: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white focus:outline-none focus:border-rose-400/50"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Button Text</label>
@@ -1171,8 +1132,8 @@ const AdminPanel = ({
                 )}
                 <button 
                   onClick={async () => {
-                    if (!selectedTaskForEdit.title || !selectedTaskForEdit.reward) {
-                      alert("Please fill in all required fields.");
+                    if (!selectedTaskForEdit.title || (!selectedTaskForEdit.duckReward && !selectedTaskForEdit.tonReward)) {
+                      alert("Please fill in Title and at least one reward.");
                       return;
                     }
                     try {
@@ -2389,9 +2350,14 @@ const App = () => {
       switch (task.verificationType) {
         case 'referral': return (userData.referralsCount || 0) >= count;
         case 'game': return (userData.spinsCount || 0) >= count;
+        case 'played': return (userData.spinsCount || 0) >= count;
         case 'win': return (userData.wins || 0) >= count;
         case 'deposit': return (userData.totalDeposited || 0) >= count;
         case 'purchase': return (userData.shopPurchases?.length || 0) >= count;
+        case 'leaderboard': {
+          const rank = leaderboard.findIndex(p => p.id === user?.uid) + 1;
+          return rank > 0 && rank <= count;
+        }
         default: return false;
       }
     };
@@ -2571,16 +2537,16 @@ const App = () => {
                   <div className="flex flex-col">
                     <span className="text-white font-black text-[13px] uppercase truncate max-w-[140px]">{task.title}</span>
                     <div className="flex flex-wrap items-center gap-2 text-[13px] font-black text-white akira-font">
-                      {task.tonReward > 0 && (
-                        <div className="flex items-center gap-1">
-                          <TonIcon size={20} />
-                          <span className="leading-none">{formatCurrency(task.tonReward)}</span>
-                        </div>
-                      )}
                       {task.duckReward > 0 && (
                         <div className="flex items-center gap-1">
                           <DuckIcon size={20} />
                           <span className="leading-none">{formatCurrency(task.duckReward)}</span>
+                        </div>
+                      )}
+                      {task.tonReward > 0 && (
+                        <div className="flex items-center gap-1">
+                          <TonIcon size={20} />
+                          <span className="leading-none">{formatCurrency(task.tonReward)}</span>
                         </div>
                       )}
                       {!task.tonReward && !task.duckReward && task.reward && (
