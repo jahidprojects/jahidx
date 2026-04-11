@@ -1121,17 +1121,21 @@ const AdminPanel = ({
                   </select>
                 </div>
 
-                {selectedTaskForEdit.verificationType === 'ads' && (
+                {(selectedTaskForEdit.type === 'daily' || selectedTaskForEdit.type === 'partner') && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">Reset Timer (Hours)</label>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-widest pl-2">
+                      Reset Timer ({selectedTaskForEdit.verificationType === 'ads' ? 'Seconds' : 'Hours'})
+                    </label>
                     <input 
                       type="number" 
-                      placeholder="e.g. 24 for daily reset"
+                      placeholder={selectedTaskForEdit.verificationType === 'ads' ? "e.g. 30 for 30s reset" : "e.g. 24 for daily reset"}
                       value={selectedTaskForEdit.resetInterval || 0}
                       onChange={(e) => setSelectedTaskForEdit({ ...selectedTaskForEdit, resetInterval: parseFloat(e.target.value) || 0 })}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white focus:outline-none focus:border-rose-400/50"
                     />
-                    <p className="text-[9px] text-white/20 px-2">Task will become available again after this many hours. Set to 0 for one-time task.</p>
+                    <p className="text-[9px] text-white/20 px-2">
+                      Task will become available again after this many {selectedTaskForEdit.verificationType === 'ads' ? 'seconds' : 'hours'}. Set to 0 for one-time task.
+                    </p>
                   </div>
                 )}
 
@@ -2649,14 +2653,26 @@ const App = () => {
       
       if (aDone && aResetInterval > 0 && aTime) {
         const lastCompleted = aTime.toDate ? aTime.toDate() : new Date(aTime);
-        const hoursSince = (new Date().getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
-        if (hoursSince >= aResetInterval) aActuallyDone = false;
+        const diffMs = new Date().getTime() - lastCompleted.getTime();
+        if (a.verificationType === 'ads') {
+          const secondsSince = diffMs / 1000;
+          if (secondsSince >= aResetInterval) aActuallyDone = false;
+        } else {
+          const hoursSince = diffMs / (1000 * 60 * 60);
+          if (hoursSince >= aResetInterval) aActuallyDone = false;
+        }
       }
       
       if (bDone && bResetInterval > 0 && bTime) {
         const lastCompleted = bTime.toDate ? bTime.toDate() : new Date(bTime);
-        const hoursSince = (new Date().getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
-        if (hoursSince >= bResetInterval) bActuallyDone = false;
+        const diffMs = new Date().getTime() - lastCompleted.getTime();
+        if (b.verificationType === 'ads') {
+          const secondsSince = diffMs / 1000;
+          if (secondsSince >= bResetInterval) bActuallyDone = false;
+        } else {
+          const hoursSince = diffMs / (1000 * 60 * 60);
+          if (hoursSince >= bResetInterval) bActuallyDone = false;
+        }
       }
 
       if (aActuallyDone && !bActuallyDone) return 1;
@@ -2837,8 +2853,14 @@ const App = () => {
               let isDone = isDoneInState;
               if (isDoneInState && resetInterval > 0 && completionTime) {
                 const lastCompleted = completionTime.toDate ? completionTime.toDate() : new Date(completionTime);
-                const hoursSince = (new Date().getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
-                if (hoursSince >= resetInterval) isDone = false;
+                const diffMs = new Date().getTime() - lastCompleted.getTime();
+                if (task.verificationType === 'ads') {
+                  const secondsSince = diffMs / 1000;
+                  if (secondsSince >= resetInterval) isDone = false;
+                } else {
+                  const hoursSince = diffMs / (1000 * 60 * 60);
+                  if (hoursSince >= resetInterval) isDone = false;
+                }
               }
 
               const isVerifying = verifyingTaskId === task.id;
