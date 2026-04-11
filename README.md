@@ -1,20 +1,94 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🎁 Gift Phase V2
 
-# Run and deploy your AI Studio app
+**Gift Phase V2** is a premium, high-performance Telegram Mini App (TMA) ecosystem designed for engagement, competition, and rewards. Built with a polished 3D aesthetic, it combines physics-based gaming with a robust task-and-reward economy.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/388c510d-c503-4478-abad-75e7a0d17f46
+## 🚀 Key Features
 
-## Run Locally
+### 🎮 Game Arena (Hegmo Arena)
+A carrom-style physics-based arena game where players compete in real-time. Featuring smooth animations, 3D styling, and high-stakes bidding.
 
-**Prerequisites:**  Node.js
+### 📋 Advanced Task Center
+A multi-category task system designed to keep users engaged:
+- **Daily Tasks:** Repeatable tasks with configurable reset timers (Hours).
+- **Adsgram Integration:** "WACH ADS GET DUCK" — Watch video ads to earn instant DUCK rewards with a custom second-based reset timer.
+- **Achievement Tasks:** Long-term goals based on user activity (referrals, games played, wins).
+- **Partner Tasks:** Collaboration tasks to grow the ecosystem.
+- **Dynamic Sorting:** Incomplete tasks stay at the top; completed tasks move to the bottom with 15% opacity.
 
+### 👥 Referral System (Invite & Earn)
+Grow the community with a multi-tier referral system. Users earn a percentage of their friends' rewards, fostering organic growth.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 🛒 Shop & Economy
+A dual-currency economy featuring **DUCK** and **TON**:
+- **DUCK:** The primary utility token earned through tasks and games.
+- **TON:** Integrated via TON Connect for high-value transactions and VIP status.
+- **Shop:** Purchase exclusive items, frames, and boosts to enhance the experience.
+
+### 🏆 Competitive Leaderboard
+Real-time rankings showing the top players in the ecosystem. Compete for the top spot and earn prestige within the community.
+
+### 🛠️ Robust Admin Panel
+A comprehensive management suite for administrators:
+- **Task Editor:** Create and edit tasks with custom icons, rewards, and reset intervals (Hours or Seconds).
+- **Promo Management:** Update the home screen banners in real-time.
+- **Economy Control:** Reset balances, manage custom bids, and monitor system health.
+- **Security:** Protected routes and actions to ensure ecosystem integrity.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React 18+, Vite, Tailwind CSS (v4)
+- **Animations:** Framer Motion (motion/react)
+- **Icons:** Lucide React
+- **Database & Auth:** Firebase (Firestore, Authentication)
+- **Blockchain:** TON Connect SDK
+- **Monetization:** Adsgram Integration
+- **Platform:** Telegram Web Apps (TWA) SDK
+
+---
+
+## 📦 Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- npm or yarn
+- A Firebase Project
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repo-url>
+   cd gift-phase-v2
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root directory and add your credentials (see `.env.example`).
+
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🔐 Security & Economy
+
+Gift Phase V2 implements strict security measures to protect the ecosystem:
+- **Server-Side Increments:** All balance updates (DUCK/TON) are handled via Firestore `increment()` to prevent client-side manipulation.
+- **Timestamp Verification:** Task resets and cooldowns are calculated using server-side timestamps.
+- **Custom Modals:** All critical actions (Bidding, Purchasing, Reseting) use a custom 3D Modal system instead of native browser dialogs for a secure and consistent UI.
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License.
