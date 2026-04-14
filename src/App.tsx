@@ -2632,6 +2632,26 @@ const App = () => {
 };
 
   const renderTaskCenter = () => {
+    const checkIsTaskDone = (task) => {
+      const isDoneInState = (completedTaskIds || []).includes(task.id);
+      if (!isDoneInState) return false;
+      
+      const resetInterval = task.resetInterval || 0;
+      if (resetInterval <= 0) return true;
+      
+      const completionTime = taskCompletionTimes[task.id];
+      if (!completionTime) return true;
+      
+      const lastCompleted = completionTime.toDate ? completionTime.toDate() : new Date(completionTime);
+      const diffMs = new Date().getTime() - lastCompleted.getTime();
+      
+      if (task.verificationType === 'ads') {
+        return (diffMs / 1000) < resetInterval;
+      } else {
+        return (diffMs / (1000 * 60 * 60)) < resetInterval;
+      }
+    };
+
     const tasksToShow = allTasks.filter(t => {
       const cat = taskCategory === 'achievements' ? 'achievement' : taskCategory === 'partners' ? 'partner' : 'daily';
       return t.type === cat && !t.deleted;
@@ -2844,28 +2864,13 @@ const App = () => {
         <div id="tasks-list" className="p-4 space-y-3 relative z-10">
           {(() => {
             const dailySocialTasks = allTasks.filter(t => t.type === 'daily' && t.verificationType !== 'ads' && !t.deleted);
-            const isDailySocialCompleted = dailySocialTasks.length > 0 && dailySocialTasks.every(t => (completedTaskIds || []).includes(t.id));
+            const isDailySocialCompleted = dailySocialTasks.length > 0 && dailySocialTasks.every(t => checkIsTaskDone(t));
 
             const adsTasks = sortedTasks.filter(t => t.verificationType === 'ads');
             const socialTasks = sortedTasks.filter(t => t.verificationType !== 'ads');
             
             const renderTask = (task) => {
-              const isDoneInState = (completedTaskIds || []).includes(task.id);
-              const resetInterval = task.resetInterval || 0;
-              const completionTime = taskCompletionTimes[task.id];
-              
-              let isDone = isDoneInState;
-              if (isDoneInState && resetInterval > 0 && completionTime) {
-                const lastCompleted = completionTime.toDate ? completionTime.toDate() : new Date(completionTime);
-                const diffMs = new Date().getTime() - lastCompleted.getTime();
-                if (task.verificationType === 'ads') {
-                  const secondsSince = diffMs / 1000;
-                  if (secondsSince >= resetInterval) isDone = false;
-                } else {
-                  const hoursSince = diffMs / (1000 * 60 * 60);
-                  if (hoursSince >= resetInterval) isDone = false;
-                }
-              }
+              const isDone = checkIsTaskDone(task);
 
               const isVerifying = verifyingTaskId === task.id;
               const canClaimAchievement = task.type === 'achievement' && checkAchievementCriteria(task);
