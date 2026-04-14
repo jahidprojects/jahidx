@@ -48,6 +48,7 @@ import {
   ClipboardList,
   ChevronLeft,
   ChevronRight,
+  Lock,
   ChevronDown,
   MoreVertical,
   X,
@@ -2842,6 +2843,9 @@ const App = () => {
         </div>
         <div id="tasks-list" className="p-4 space-y-3 relative z-10">
           {(() => {
+            const dailySocialTasks = allTasks.filter(t => t.type === 'daily' && t.verificationType !== 'ads' && !t.deleted);
+            const isDailySocialCompleted = dailySocialTasks.length > 0 && dailySocialTasks.every(t => (completedTaskIds || []).includes(t.id));
+
             const adsTasks = sortedTasks.filter(t => t.verificationType === 'ads');
             const socialTasks = sortedTasks.filter(t => t.verificationType !== 'ads');
             
@@ -2867,6 +2871,8 @@ const App = () => {
               const canClaimAchievement = task.type === 'achievement' && checkAchievementCriteria(task);
               const isAdsTask = task.verificationType === 'ads';
               
+              const isLocked = !isDailySocialCompleted && (task.type === 'achievement' || task.type === 'partner' || isAdsTask);
+
               const adTimer = adTimers[task.id] || 0;
               const isAdReady = adReady[task.id] || false;
 
@@ -2905,13 +2911,37 @@ const App = () => {
               return (
                 <React.Fragment key={task.id}>
                   <div 
-                    className={`p-4 rounded-[28px] bg-gradient-to-b ${themeGrad} border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)] flex flex-col transition-all ${isDone ? 'opacity-[0.15]' : 'opacity-100'} ${isAdsTask ? 'min-h-[140px] justify-center gap-4' : 'items-center justify-between flex-row'}`}
+                    className={`p-4 rounded-[28px] bg-gradient-to-b ${themeGrad} border-t border-white/20 shadow-[0_5px_0_rgba(0,0,0,0.4)] flex flex-col transition-all relative overflow-hidden ${isDone ? 'opacity-[0.15]' : 'opacity-100'} ${isAdsTask ? 'min-h-[140px] justify-center gap-4' : 'items-center justify-between flex-row'}`}
                     style={customStyle}
                   >
-                    <div className="flex items-center gap-4 w-full">
+                    {isLocked && (
+                      <div 
+                        onClick={() => {
+                          if (isAdsTask) {
+                            const el = document.getElementById('tasks-list');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          } else {
+                            setTaskCategory('daily');
+                            const el = document.getElementById('tasks-list');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                        className="absolute inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-center cursor-pointer active:bg-black/50 transition-all"
+                      >
+                        <Lock size={24} className="text-white mb-2" />
+                        <span className="text-white font-black text-[10px] uppercase tracking-wider leading-tight">
+                          Complete daily social task's to unlock
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 w-full min-w-0">
                       <div className="w-10 h-10 rounded-2xl bg-black/20 flex items-center justify-center text-white shrink-0">{displayIcon}</div>
                       <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-white font-black text-[13px] uppercase truncate">{task.title}</span>
+                        <span className="text-white font-black text-[13px] uppercase truncate">
+                          {task.title.toUpperCase().includes('SUBSCRIBE') && task.title.length > 18 
+                            ? 'Subscribe Channel...' 
+                            : (task.title.length > 20 ? task.title.substring(0, 17) + '...' : task.title)}
+                        </span>
                         <div className="flex flex-wrap items-center gap-2 text-[13px] font-black text-white akira-font">
                           {task.duckReward > 0 && (
                             <div className="flex items-center gap-1">
@@ -2933,7 +2963,7 @@ const App = () => {
                       <div className="flex gap-3 w-full">
                         <button 
                           onClick={() => handleWatchAd(task.id)}
-                          disabled={isDone || adTimer > 0}
+                          disabled={isDone || adTimer > 0 || isLocked}
                           className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border-t shadow-[0_4px_0_rgba(0,0,0,0.3)] active:translate-y-[2px] active:shadow-none ${
                             isDone || adTimer > 0
                             ? 'bg-black/20 text-white/20 border-white/5 shadow-none translate-y-[2px]' 
@@ -2944,7 +2974,7 @@ const App = () => {
                         </button>
                         <button 
                           onClick={() => handleTaskClick(task.id)}
-                          disabled={isDone || !isAdReady}
+                          disabled={isDone || !isAdReady || isLocked}
                           className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border-t shadow-[0_4px_0_rgba(0,0,0,0.3)] active:translate-y-[2px] active:shadow-none ${
                             isDone || !isAdReady
                             ? 'bg-black/20 text-white/20 border-white/5 shadow-none translate-y-[2px]' 
@@ -2958,8 +2988,8 @@ const App = () => {
                       task.type === 'achievement' ? (
                         <button 
                           onClick={() => handleTaskAction(task)}
-                          disabled={isDone || !canClaimAchievement}
-                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-t ${
+                          disabled={isDone || !canClaimAchievement || isLocked}
+                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-t shrink-0 ${
                             isDone 
                             ? 'bg-transparent text-white/20 border-white/5' 
                             : !canClaimAchievement
@@ -2972,6 +3002,7 @@ const App = () => {
                       ) : (
                         <button 
                           onClick={() => {
+                            if (isLocked) return;
                             if (isDone && task.link) {
                               if (task.verificationType === 'channel' || task.verificationType === 'group') WebApp.openTelegramLink(task.link);
                               else WebApp.openLink(task.link);
@@ -2979,7 +3010,8 @@ const App = () => {
                               handleTaskAction(task);
                             }
                           }}
-                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-t ${
+                          disabled={isLocked}
+                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-t shrink-0 ${
                             isDone 
                             ? 'bg-white/10 text-white/40 border-white/5 active:translate-y-[1px]' 
                             : isVerifying
@@ -3422,11 +3454,11 @@ const App = () => {
       </div>
       {isGameLoaded && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-black/85 backdrop-blur-3xl border-t border-white/5 z-[100] pb-9 flex justify-around items-center font-sans h-24">
-          <div onClick={() => setActiveTab('market')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'market' ? 'text-[#3498db] scale-110' : 'text-[#5d666d]'}`}><Store size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.shop}</span></div>
-          <div onClick={() => setActiveTab('arena')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'arena' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Gamepad2 size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.arena}</span></div>
-          <div onClick={() => setActiveTab('tasks')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'tasks' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><ClipboardList size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.tasks}</span></div>
-          <div onClick={() => setActiveTab('rank')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'rank' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Trophy size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.rank}</span></div>
-          <div onClick={() => setActiveTab('profile')} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'profile' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}>
+          <div onClick={() => { setActiveTab('market'); setIsAdminPanelOpen(false); }} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'market' ? 'text-[#3498db] scale-110' : 'text-[#5d666d]'}`}><Store size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.shop}</span></div>
+          <div onClick={() => { setActiveTab('arena'); setIsAdminPanelOpen(false); }} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'arena' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Gamepad2 size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.arena}</span></div>
+          <div onClick={() => { setActiveTab('tasks'); setIsAdminPanelOpen(false); }} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'tasks' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><ClipboardList size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.tasks}</span></div>
+          <div onClick={() => { setActiveTab('rank'); setIsAdminPanelOpen(false); }} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'rank' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}><Trophy size={26} /><span className="text-[11px] font-bold uppercase font-sans">{t.rank}</span></div>
+          <div onClick={() => { setActiveTab('profile'); setIsAdminPanelOpen(false); }} className={`flex flex-col items-center justify-end h-full gap-1.5 cursor-pointer transition-all ${activeTab === 'profile' ? 'text-[#2563EB] scale-110' : 'text-[#5d666d]'}`}>
             <User size={26} />
             <span className="text-[11px] font-bold uppercase font-sans">{t.profile}</span>
           </div>
