@@ -157,99 +157,6 @@ const getUpgradeCost = (level: number) => {
   };
 };
 
-const UpgradePopup = ({ 
-  isOpen, 
-  onClose, 
-  currentLevel, 
-  onUpgrade, 
-  miner 
-}: { 
-  isOpen: boolean, 
-  onClose: () => void, 
-  currentLevel: number, 
-  onUpgrade: (currency: 'duck' | 'ton') => void,
-  miner: any
-}) => {
-  if (!isOpen) return null;
-
-  const nextLevel = currentLevel + 1;
-  const nextStats = calculateMinerStats(nextLevel);
-  const cost = getUpgradeCost(currentLevel);
-  
-  // Skin logic: use a placeholder or variations
-  const nextSkin = `https://picsum.photos/seed/giftminer${nextLevel}/300/300`;
-
-  return (
-    <div className="fixed inset-0 z-[1100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="w-full max-w-sm bg-[#0a0a0a] rounded-[40px] border border-white/10 p-8 space-y-8 shadow-2xl relative overflow-hidden">
-        {/* Background Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-500/20 blur-[100px] -z-10"></div>
-        
-        <div className="text-center space-y-2">
-          <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter akira-font">Level {nextLevel}</h3>
-          <p className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">Next Evolution</p>
-        </div>
-
-        {/* Skin Preview */}
-        <div className="relative w-48 h-48 mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-[40px] border border-white/10 shadow-inner"></div>
-          <motion.img 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            src={nextSkin} 
-            className="w-full h-full object-contain p-6 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] rounded-3xl"
-            alt="Next Skin"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-
-        {/* Earnings Info */}
-        <div className="space-y-4">
-          <div className="bg-white/5 rounded-3xl p-5 border border-white/5 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">DUCK / DAY</span>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black text-white akira-font">{Math.floor(nextStats.dailyDuck).toLocaleString()}</span>
-                <DuckIcon size={20} />
-              </div>
-            </div>
-            <div className="h-[1px] bg-white/5 w-full"></div>
-            <div className="flex items-center justify-between">
-              <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">TON / 24H</span>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black text-white akira-font">{nextStats.dailyTon.toFixed(4)}</span>
-                <TonIcon size={20} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Upgrade Buttons */}
-        <div className="flex flex-col gap-4">
-          <button 
-            onClick={() => onUpgrade('duck')}
-            className="w-full py-5 rounded-[24px] bg-gradient-to-b from-cyan-400 to-cyan-600 text-black font-black text-sm uppercase tracking-widest border-t border-white/30 shadow-[0_6px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-3"
-          >
-            Upgrade with {formatCurrency(cost.duck)} DUCK
-          </button>
-          <button 
-            onClick={() => onUpgrade('ton')}
-            className="w-full py-5 rounded-[24px] bg-gradient-to-b from-yellow-400 to-yellow-600 text-black font-black text-sm uppercase tracking-widest border-t border-white/30 shadow-[0_6px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-3"
-          >
-            Upgrade with {cost.ton.toFixed(2)} TON
-          </button>
-          <button 
-            onClick={onClose}
-            className="w-full py-2 text-white/20 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors"
-          >
-            Maybe Later
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const GlassJar = ({ fillPercentage, level, isBoosting }: { fillPercentage: number, level: number, isBoosting: boolean }) => {
   const currentSkin = `https://picsum.photos/seed/giftminer${level}/300/300`;
   return (
@@ -347,6 +254,99 @@ const TonIcon = ({ size = 16, className = "" }) => (
     className={`inline-flex shrink-0 transition-transform duration-200 hover:scale-110 ${className}`}
   />
 );
+
+const UpgradePopup = ({ 
+  isOpen, 
+  onClose, 
+  currentLevel, 
+  onUpgrade, 
+  miner 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  currentLevel: number, 
+  onUpgrade: (currency: 'duck' | 'ton') => void,
+  miner: any
+}) => {
+  if (!isOpen) return null;
+
+  const nextLevel = currentLevel + 1;
+  const nextStats = calculateMinerStats(nextLevel);
+  const cost = getUpgradeCost(currentLevel);
+  
+  // Skin logic: use a placeholder or variations
+  const nextSkin = `https://picsum.photos/seed/giftminer${nextLevel}/300/300`;
+
+  return (
+    <div className="fixed inset-0 z-[1100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="w-full max-w-sm bg-[#0a0a0a] rounded-[40px] border border-white/10 p-8 space-y-8 shadow-2xl relative overflow-hidden">
+        {/* Background Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-500/20 blur-[100px] -z-10"></div>
+        
+        <div className="text-center space-y-2">
+          <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter akira-font">Level {nextLevel}</h3>
+          <p className="text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">Next Evolution</p>
+        </div>
+
+        {/* Skin Preview */}
+        <div className="relative w-48 h-48 mx-auto">
+          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-[40px] border border-white/10 shadow-inner"></div>
+          <motion.img 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            src={nextSkin} 
+            className="w-full h-full object-contain p-6 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] rounded-3xl"
+            alt="Next Skin"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+
+        {/* Earnings Info */}
+        <div className="space-y-4">
+          <div className="bg-white/5 rounded-3xl p-5 border border-white/5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">DUCK / DAY</span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-black text-white akira-font">{Math.floor(nextStats.dailyDuck).toLocaleString()}</span>
+                <DuckIcon size={20} />
+              </div>
+            </div>
+            <div className="h-[1px] bg-white/5 w-full"></div>
+            <div className="flex items-center justify-between">
+              <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">TON / 24H</span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-black text-white akira-font">{nextStats.dailyTon.toFixed(4)}</span>
+                <TonIcon size={20} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Upgrade Buttons */}
+        <div className="flex flex-col gap-4">
+          <button 
+            onClick={() => onUpgrade('duck')}
+            className="w-full py-5 rounded-[24px] bg-gradient-to-b from-cyan-400 to-cyan-600 text-black font-black text-sm uppercase tracking-widest border-t border-white/30 shadow-[0_6px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-3"
+          >
+            Upgrade with {formatCurrency(cost.duck)} DUCK
+          </button>
+          <button 
+            onClick={() => onUpgrade('ton')}
+            className="w-full py-5 rounded-[24px] bg-gradient-to-b from-yellow-400 to-yellow-600 text-black font-black text-sm uppercase tracking-widest border-t border-white/30 shadow-[0_6px_0_rgba(0,0,0,0.4)] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-3"
+          >
+            Upgrade with {cost.ton.toFixed(2)} TON
+          </button>
+          <button 
+            onClick={onClose}
+            className="w-full py-2 text-white/20 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+          >
+            Maybe Later
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PROFILE_FRAMES = [
   { id: 'none', name: 'Default', price: 0, color: 'transparent' },
@@ -2523,16 +2523,15 @@ const App = () => {
     if (!user || !userData || userData.welcomeBonusClaimed || isClaimingWelcome) return;
     
     setIsClaimingWelcome(true);
+    const timeoutId = setTimeout(() => {
+      if (isClaimingWelcome) {
+        setIsClaimingWelcome(false);
+        WebApp.showAlert("Claiming timed out. Please try again.");
+      }
+    }, 10000);
+
     try {
       const userRef = doc(db, 'users', user.uid);
-      // Double check in Firestore before updating
-      const snap = await getDoc(userRef);
-      if (snap.exists() && snap.data().welcomeBonusClaimed) {
-        setShowWelcomePopup(false);
-        setIsClaimingWelcome(false);
-        return;
-      }
-
       await updateDoc(userRef, {
         balance: increment(welcomeReward),
         welcomeBonusClaimed: true
@@ -2540,10 +2539,86 @@ const App = () => {
       setMyBalance(prev => prev + welcomeReward);
       setShowWelcomePopup(false);
       WebApp.HapticFeedback.notificationOccurred('success');
+      clearTimeout(timeoutId);
     } catch (error) {
       console.error("Error claiming welcome bonus:", error);
+      WebApp.showAlert("Error claiming bonus. Please check your connection.");
     } finally {
       setIsClaimingWelcome(false);
+    }
+  };
+
+  const handleUpgradeInApp = async (currency: 'duck' | 'ton') => {
+    const miner = MINER_TYPES[0];
+    const userMiner = userData?.miners?.[miner.id];
+    if (!user || !userMiner) return;
+    
+    const currentLevel = userMiner.level;
+    if (currentLevel >= miner.maxLevel) {
+      WebApp.showAlert("Maximum level reached!");
+      return;
+    }
+    
+    const cost = getUpgradeCost(currentLevel);
+    if (currency === 'duck' && myBalance < cost.duck) {
+      WebApp.showAlert("Insufficient DUCK balance!");
+      return;
+    }
+    if (currency === 'ton' && tonBalance < cost.ton) {
+      WebApp.showAlert("Insufficient TON balance!");
+      return;
+    }
+
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        balance: currency === 'duck' ? increment(-cost.duck) : increment(0),
+        tonBalance: currency === 'ton' ? increment(-cost.ton) : increment(0),
+        [`miners.${miner.id}.level`]: increment(1),
+      });
+      if (currency === 'duck') setMyBalance(prev => prev - cost.duck);
+      if (currency === 'ton') setTonBalance(prev => prev - cost.ton);
+      WebApp.HapticFeedback.notificationOccurred('success');
+      WebApp.showAlert(`Upgraded to Level ${currentLevel + 1}!`);
+      setIsUpgradePopupOpen(false);
+    } catch (e) {
+      console.error("Error upgrading:", e);
+      WebApp.showAlert("Failed to upgrade. Please try again.");
+    }
+  };
+
+  const handlePurchaseMiner = async (miner: any) => {
+    if (!user) return;
+    const isOwned = !!userData?.miners?.[miner.id];
+    if (isOwned) return;
+    if (tonBalance < miner.priceTon) {
+      WebApp.showAlert("Insufficient TON balance! Please deposit TON first.");
+      return;
+    }
+    
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        tonBalance: increment(-miner.priceTon),
+        [`miners.${miner.id}`]: {
+          level: 0,
+          purchasedAt: Date.now(),
+          lastClaimAt: Date.now(),
+          lastBoostAt: 0,
+          claimsCount: 0,
+          totalDuckEarned: 0,
+          totalTonEarned: 0,
+          miningStartedAt: Date.now(),
+          isBoosting: false,
+          boostStartedAt: 0
+        }
+      });
+      setTonBalance(prev => prev - miner.priceTon);
+      WebApp.HapticFeedback.notificationOccurred('success');
+      WebApp.showAlert(`Successfully purchased ${miner.name}!`);
+    } catch (e) {
+      console.error("Error purchasing miner:", e);
+      WebApp.showAlert("Failed to purchase. Please try again.");
     }
   };
 
@@ -2813,39 +2888,9 @@ const App = () => {
       }
     };
 
-    const handleUpgrade = async (currency: 'duck' | 'ton') => {
-      if (!user || !hasMiner) return;
-      const currentLevel = userMiner.level;
-      if (currentLevel >= miner.maxLevel) {
-        WebApp.showAlert("Maximum level reached!");
-        return;
-      }
-      
-      const cost = getUpgradeCost(currentLevel);
-      if (currency === 'duck' && myBalance < cost.duck) {
-        WebApp.showAlert("Insufficient DUCK balance!");
-        return;
-      }
-      if (currency === 'ton' && tonBalance < cost.ton) {
-        WebApp.showAlert("Insufficient TON balance!");
-        return;
-      }
-
-      try {
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-          balance: currency === 'duck' ? increment(-cost.duck) : increment(0),
-          tonBalance: currency === 'ton' ? increment(-cost.ton) : increment(0),
-          [`miners.${miner.id}.level`]: increment(1),
-        });
-        if (currency === 'duck') setMyBalance(prev => prev - cost.duck);
-        if (currency === 'ton') setTonBalance(prev => prev - cost.ton);
-        WebApp.HapticFeedback.notificationOccurred('success');
-        WebApp.showAlert(`Upgraded to Level ${currentLevel + 1}!`);
-        setIsUpgradePopupOpen(false);
-      } catch (e) {
-        console.error("Error upgrading:", e);
-      }
+    const handleUpgrade = (currency: 'duck' | 'ton') => {
+      // This is now handled by the main App component's handleUpgrade
+      handleUpgradeInApp(currency);
     };
 
     return (
@@ -2924,7 +2969,7 @@ const App = () => {
           isOpen={isUpgradePopupOpen}
           onClose={() => setIsUpgradePopupOpen(false)}
           currentLevel={level}
-          onUpgrade={handleUpgrade}
+          onUpgrade={handleUpgradeInApp}
           miner={miner}
         />
 
@@ -3925,36 +3970,7 @@ const App = () => {
 
                       <button 
                         disabled={isOwned}
-                        onClick={async () => {
-                          if (!user) return;
-                          if (isOwned) return;
-                          if (tonBalance < miner.priceTon) {
-                            WebApp.showAlert("Insufficient TON balance!");
-                            return;
-                          }
-                          
-                          try {
-                            const userRef = doc(db, 'users', user.uid);
-                            await updateDoc(userRef, {
-                              tonBalance: increment(-miner.priceTon),
-                              [`miners.${miner.id}`]: {
-                                level: 0,
-                                purchasedAt: Date.now(),
-                                lastClaimAt: Date.now(),
-                                lastBoostAt: 0,
-                                claimsCount: 0,
-                                totalDuckEarned: 0,
-                                totalTonEarned: 0,
-                                miningStartedAt: Date.now(),
-                                isBoosting: false,
-                                boostStartedAt: 0
-                              }
-                            });
-                            setTonBalance(prev => Math.max(0, prev - miner.priceTon));
-                            WebApp.HapticFeedback.notificationOccurred('success');
-                            WebApp.showAlert(`Successfully purchased ${miner.name}!`);
-                          } catch (e) { console.error(e); }
-                        }}
+                        onClick={() => handlePurchaseMiner(miner)}
                         className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 ${isOwned ? 'bg-gray-800 text-white/40' : 'bg-gradient-to-b from-white to-gray-200 shadow-[0_6px_0_rgba(0,0,0,0.2)] active:translate-y-[2px] active:shadow-none'} transition-all akira-font`}
                       >
                         {isOwned ? (
