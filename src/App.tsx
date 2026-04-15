@@ -24,7 +24,8 @@ import {
   getDocFromServer,
   writeBatch,
   getDocs,
-  addDoc
+  addDoc,
+  runTransaction
 } from 'firebase/firestore';
 
 // Validate Connection to Firestore
@@ -2171,7 +2172,21 @@ const App = () => {
     }
   }, [status, players.length, timeLeft === 0]);
 
-  const runDrawSequence = () => {
+  const runDrawSequence = async () => {
+    if (status !== 'waiting') return;
+    
+    // Try to claim the draw start in Firestore
+    if (user) {
+      try {
+        await updateDoc(doc(db, 'games', 'current'), {
+          status: 'drawing'
+        });
+      } catch (error) {
+        // If someone else already started it, onSnapshot will pick it up
+        return;
+      }
+    }
+
     setStatus('drawing');
     const startPos = { x: 30 + Math.random() * 40, y: 30 + Math.random() * 40 };
     setSelectorPos(startPos); 
@@ -2359,50 +2374,74 @@ const App = () => {
 
     try {
       const gameRef = doc(db, 'games', 'current');
-      const gameSnap = await getDoc(gameRef);
-      let currentPlayers = [];
-      let currentPot = 0;
       
-      if (gameSnap.exists()) {
-        const data = gameSnap.data();
-        currentPlayers = data.players || [];
-        currentPot = data.totalPot || 0;
-      }
-
-      const existingIdx = currentPlayers.findIndex(p => p.username === n);
-      if (existingIdx > -1) {
-        currentPlayers[existingIdx].bet += finalAmt;
-        if (isMe) {
-          currentPlayers[existingIdx].selectedFrame = userData?.selectedFrame || 'none';
-          currentPlayers[existingIdx].uid = user.uid;
-          currentPlayers[existingIdx].hasBoughtWithTon = userData?.hasBoughtWithTon || false;
+      await runTransaction(db, async (transaction) => {
+        const gameSnap = await transaction.get(gameRef);
+        let currentPlayers = [];
+        let currentPot = 0;
+        let currentStatus = 'waiting';
+        
+        if (gameSnap.exists()) {
+          const data = gameSnap.data();
+          currentPlayers = data.players || [];
+          currentPot = data.totalPot || 0;
+          currentStatus = data.status || 'waiting';
         }
-      } else if (currentPlayers.length < 15) {
-        const pal = PLAYER_PALETTE[currentPlayers.length % PLAYER_PALETTE.length];
-        const newPlayer = { 
-          uid: isMe ? user.uid : (bot ? bot.id : `bot_${Date.now()}`),
-          username: n, 
-          avatar: a, 
-          bet: finalAmt, 
-          color: pal.main, 
-          lightColor: pal.light, 
-          accentColor: pal.accent, 
-          isMe, 
-          id: Date.now() + Math.random(),
-          selectedFrame: isMe ? (userData?.selectedFrame || 'none') : 'none',
-          hasBoughtWithTon: isMe ? (userData?.hasBoughtWithTon || false) : false
-        };
-        currentPlayers.push(newPlayer);
-      }
 
-      await setDoc(gameRef, {
-        players: currentPlayers,
-        totalPot: currentPot + finalAmt,
-        status: 'waiting',
-        createdAt: serverTimestamp()
-      }, { merge: true });
+        // If game is no longer waiting, abort bid
+        if (currentStatus !== 'waiting') {
+          throw new Error("Game already started");
+        }
+
+        const existingIdx = currentPlayers.findIndex(p => p.username === n);
+        if (existingIdx > -1) {
+          currentPlayers[existingIdx].bet += finalAmt;
+          if (isMe) {
+            currentPlayers[existingIdx].selectedFrame = userData?.selectedFrame || 'none';
+            currentPlayers[existingIdx].uid = user.uid;
+            currentPlayers[existingIdx].hasBoughtWithTon = userData?.hasBoughtWithTon || false;
+          }
+        } else if (currentPlayers.length < 15) {
+          const pal = PLAYER_PALETTE[currentPlayers.length % PLAYER_PALETTE.length];
+          const newPlayer = { 
+            uid: isMe ? user.uid : (bot ? bot.id : `bot_${Date.now()}`),
+            username: n, 
+            avatar: a, 
+            bet: finalAmt, 
+            color: pal.main, 
+            lightColor: pal.light, 
+            accentColor: pal.accent, 
+            isMe, 
+            id: Date.now() + Math.random(),
+            selectedFrame: isMe ? (userData?.selectedFrame || 'none') : 'none',
+            hasBoughtWithTon: isMe ? (userData?.hasBoughtWithTon || false) : false
+          };
+          currentPlayers.push(newPlayer);
+        }
+
+        transaction.set(gameRef, {
+          players: currentPlayers,
+          totalPot: currentPot + finalAmt,
+          status: 'waiting',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      });
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'games/current');
+      if (error instanceof Error && error.message === "Game already started") {
+        // Refund local balance if bid failed because game started
+        if (isMe) {
+          setMyBalance(prev => prev + finalAmt);
+          if (user) {
+            updateDoc(doc(db, 'users', user.uid), {
+              balance: increment(finalAmt),
+              volume: increment(-finalAmt),
+              spinsCount: increment(-1)
+            }).catch(console.error);
+          }
+        }
+      } else {
+        handleFirestoreError(error, OperationType.WRITE, 'games/current');
+      }
     }
   };
 
