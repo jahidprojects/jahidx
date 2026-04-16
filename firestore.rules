@@ -130,14 +130,14 @@ service cloud.firestore {
       return isAuthenticated() && 
         ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tgId in [6686954447, 1678112785, 5968063026])) ||
-         (request.auth.token.email == "jahidproject8@gmail.com" && request.auth.token.email_verified == true));
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('tgId', 0) in [6686954447, 1678112785, 5968063026])) ||
+         (request.auth.token.email == "jahidproject8@gmail.com"));
     }
 
     function isAllowedAdmin(data) {
       return data.role == 'admin' && 
-             (data.tgId in [6686954447, 1678112785, 5968063026] || 
-              (request.auth.token.email == "jahidproject8@gmail.com" && request.auth.token.email_verified == true));
+             (data.get('tgId', 0) in [6686954447, 1678112785, 5968063026] || 
+              (request.auth.token.email == "jahidproject8@gmail.com"));
     }
 
     function isValidUser(data) {
@@ -152,24 +152,25 @@ service cloud.firestore {
              data.completedTasks is list && data.completedTasks.size() < 1000 &&
              data.role in ['user', 'admin'] &&
              (!('tgId' in data) || data.tgId == null || data.tgId is int) &&
-             (!('spinsCount' in data) || data.spinsCount is number);
+             (!('spinsCount' in data) || data.spinsCount is number) &&
+             (!('welcomeBonusClaimed' in data) || data.welcomeBonusClaimed is bool) &&
+             (!('miners' in data) || data.miners is map);
     }
 
     // Helper to check if balance increment is valid based on a task
     function isValidTaskReward(userId) {
-      let oldTasks = resource.data.completedTasks;
+      let oldTasks = resource.data.get('completedTasks', []);
       let newTasks = request.resource.data.completedTasks;
       let addedTasks = newTasks.toSet().difference(oldTasks.toSet());
       
       // If exactly one task was added
       return addedTasks.size() == 1 &&
-             // And balance increment matches the task reward (this is hard without knowing which task)
              // For now, we allow the increment if it's a positive number and the user is adding a task
              request.resource.data.balance > resource.data.balance;
     }
 
     function isValidWelcomeClaim() {
-      return !resource.data.welcomeBonusClaimed && 
+      return !resource.data.get('welcomeBonusClaimed', false) && 
              request.resource.data.welcomeBonusClaimed == true &&
              (request.resource.data.balance == resource.data.balance + 3000 || 
               request.resource.data.balance == resource.data.balance + 5000);
@@ -302,8 +303,8 @@ service cloud.firestore {
 
           // Case 5: Arena Bid (DUCK spending)
           (request.resource.data.balance < resource.data.balance && 
-           request.resource.data.volume >= resource.data.volume &&
-           (!('spinsCount' in request.resource.data) || request.resource.data.spinsCount >= resource.data.spinsCount))
+           request.resource.data.volume >= resource.data.get('volume', 0) &&
+           (!('spinsCount' in request.resource.data) || request.resource.data.spinsCount >= resource.data.get('spinsCount', 0)))
         )
       );
     }

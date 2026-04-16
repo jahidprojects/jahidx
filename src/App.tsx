@@ -1727,6 +1727,7 @@ const App = () => {
     description?: string;
     type: 'alert' | 'confirm' | 'input';
     onConfirm?: (value?: string) => void;
+    onCancel?: () => void;
     confirmText?: string;
     cancelText?: string;
     inputValue?: string;
@@ -2477,6 +2478,7 @@ const App = () => {
 
     try {
       const gameRef = doc(db, 'games', 'current');
+      console.log("Starting Bid Transaction:", { uid, finalAmt, isMe });
       
       await runTransaction(db, async (transaction) => {
         // 1. Get Game State
@@ -2773,13 +2775,15 @@ const App = () => {
     }
     
     const isOwned = !!userData?.miners?.[miner.id];
+    console.log("Purchase attempt:", { minerId: miner.id, isOwned, tonBalance, price: miner.priceTon });
+    
     if (isOwned) {
       showAlert("You already own this miner!");
       return;
     }
     
     if (tonBalance < miner.priceTon) {
-      showAlert(`Insufficient TON balance! You need ${miner.priceTon} TON to purchase ${miner.name}.`);
+      showAlert(`Insufficient TON balance! You need ${miner.priceTon} TON to purchase ${miner.name}. Current: ${tonBalance} TON`);
       return;
     }
 
