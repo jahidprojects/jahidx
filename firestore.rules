@@ -12,21 +12,27 @@ service cloud.firestore {
     //   - username: string (required, < 50 chars) - User's display name
     //   - avatar: string (required, < 500 chars) - URL to profile image
     //   - balance: number (required, >= 0) - DUCK balance
+    //   - tonBalance: number (required, >= 0) - TON balance
     //   - wins: number (required, >= 0) - Total wins
     //   - volume: number (required, >= 0) - Total volume
-    //   - completedTasks: list of strings (required, < 100 items) - Task IDs
+    //   - spinsCount: number (required, >= 0) - Total games played
+    //   - completedTasks: list of strings (required, < 1000 items) - Task IDs
+    //   - role: string (required, ['user', 'admin'])
+    //   - tgId: number (optional) - Telegram User ID
+    //   - welcomeBonusClaimed: boolean (optional)
     //   - referralCode: string (optional, < 20 chars) - Referral code
     //   - referredBy: string (optional, < 50 chars) - UID of referrer
     //
     // Collection: games
     // Document ID: {gameId}
     // Fields:
-    //   - id: string (required)
+    //   - id: string (optional)
     //   - players: list of objects (required, < 50 items) - Player data
     //   - totalPot: number (required, >= 0) - Total pot
     //   - winner: map (optional) - Winner data
     //   - status: string (required, ['waiting', 'drawing', 'winner'])
-    //   - createdAt: timestamp (required)
+    //   - createdAt: timestamp (optional)
+    //   - updatedAt: timestamp (optional)
     // ===============================================================
 
     // Collection: transactions
@@ -135,7 +141,7 @@ service cloud.firestore {
     }
 
     function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'username', 'avatar', 'balance', 'tonBalance', 'wins', 'volume', 'completedTasks', 'role', 'tgId']) &&
+      return data.keys().hasAll(['uid', 'username', 'avatar', 'balance', 'tonBalance', 'wins', 'volume', 'completedTasks', 'role']) &&
              data.uid == request.auth.uid &&
              data.username is string && data.username.size() > 0 && data.username.size() < 50 &&
              data.avatar is string && data.avatar.size() < 500 &&
@@ -145,7 +151,8 @@ service cloud.firestore {
              data.volume is number && data.volume >= 0 &&
              data.completedTasks is list && data.completedTasks.size() < 1000 &&
              data.role in ['user', 'admin'] &&
-             (data.tgId == null || data.tgId is int);
+             (!('tgId' in data) || data.tgId == null || data.tgId is int) &&
+             (!('spinsCount' in data) || data.spinsCount is number);
     }
 
     // Helper to check if balance increment is valid based on a task
@@ -169,12 +176,9 @@ service cloud.firestore {
     }
 
     function isValidGame(data) {
-      return data.keys().hasAll(['id', 'players', 'totalPot', 'status', 'createdAt']) &&
-             data.id is string &&
-             data.players is list && data.players.size() < 50 &&
+      return data.players is list && data.players.size() < 50 &&
              data.totalPot is number && data.totalPot >= 0 &&
-             data.status in ['waiting', 'drawing', 'winner'] &&
-             data.createdAt is timestamp;
+             data.status in ['waiting', 'drawing', 'winner'];
     }
 
     function isValidTransaction(data) {
@@ -275,8 +279,8 @@ service cloud.firestore {
       allow list: if isAdmin() || (request.query.limit != null && request.query.limit <= 100);
       allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
                      (request.resource.data.role == 'user' || isAllowedAdmin(request.resource.data)) &&
-                     request.resource.data.balance == 10 && // Initial balance
-                     request.resource.data.tonBalance == 0;
+                     request.resource.data.balance == 10 && 
+                     request.resource.data.tonBalance == 1000;
       allow update: if isAdmin() || (
         isOwner(userId) && isValidUser(request.resource.data) &&
         request.resource.data.uid == resource.data.uid &&
@@ -294,7 +298,12 @@ service cloud.firestore {
 
           // Case 4: Spending TON in shop (decrement only)
           (request.resource.data.tonBalance < resource.data.tonBalance && 
-           request.resource.data.balance == resource.data.balance)
+           request.resource.data.balance == resource.data.balance) ||
+
+          // Case 5: Arena Bid (DUCK spending)
+          (request.resource.data.balance < resource.data.balance && 
+           request.resource.data.volume >= resource.data.volume &&
+           (!('spinsCount' in request.resource.data) || request.resource.data.spinsCount >= resource.data.spinsCount))
         )
       );
     }

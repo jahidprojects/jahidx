@@ -853,6 +853,9 @@ const AdminPanel = ({
     setModalConfig({ ...config, isOpen: true });
   };
 
+  const showAlert = (msg: string) => showModal({ title: 'Alert', description: msg, type: 'alert' });
+  const showConfirm = (msg: string, onConfirm: () => void) => showModal({ title: 'Confirm', description: msg, type: 'confirm', onConfirm });
+
   const closeModal = () => {
     setModalConfig(prev => ({ ...prev, isOpen: false }));
   };
@@ -1139,7 +1142,7 @@ const AdminPanel = ({
                     WebApp.HapticFeedback.notificationOccurred('success');
                   } catch (error) {
                     console.error("Error updating user:", error);
-                    WebApp.showAlert("Failed to update user.");
+                    showAlert("Failed to update user.");
                   }
                 }}
                 className="w-full py-6 bg-rose-400 text-black font-black uppercase rounded-[32px] flex items-center justify-center gap-2 shadow-lg active:translate-y-1 transition-all"
@@ -1507,8 +1510,8 @@ const AdminPanel = ({
                   </div>
                   <button 
                     onClick={() => { 
-                      WebApp.showConfirm("Delete promo?", (confirmed) => {
-                        if (confirmed) updateDoc(doc(db, 'promoCodes', promo.id), { deleted: true });
+                      showConfirm("Delete promo?", () => {
+                        updateDoc(doc(db, 'promoCodes', promo.id), { deleted: true });
                       });
                     }}
                     className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -1551,8 +1554,8 @@ const AdminPanel = ({
                     </div>
                     <button 
                       onClick={() => { 
-                        WebApp.showConfirm("Delete link?", (confirmed) => {
-                          if (confirmed) updateDoc(doc(db, 'referralLinks', link.id), { deleted: true });
+                        showConfirm("Delete link?", () => {
+                          updateDoc(doc(db, 'referralLinks', link.id), { deleted: true });
                         });
                       }}
                       className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -1610,8 +1613,8 @@ const AdminPanel = ({
                   </div>
                   <button 
                     onClick={() => { 
-                      WebApp.showConfirm("Delete offer?", (confirmed) => {
-                        if (confirmed) updateDoc(doc(db, 'withdrawalOffers', offer.id), { deleted: true });
+                      showConfirm("Delete offer?", () => {
+                        updateDoc(doc(db, 'withdrawalOffers', offer.id), { deleted: true });
                       });
                     }}
                     className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -1737,6 +1740,9 @@ const App = () => {
     setModalConfig({ ...config, isOpen: true });
   };
 
+  const showAlert = (msg: string) => showModal({ title: 'Alert', description: msg, type: 'alert' });
+  const showConfirm = (msg: string, onConfirm: () => void) => showModal({ title: 'Confirm', description: msg, type: 'confirm', onConfirm });
+
   const closeModal = () => {
     setModalConfig(prev => ({ ...prev, isOpen: false }));
   };
@@ -1858,9 +1864,9 @@ const App = () => {
           console.error("Auth Error:", err);
           if (err.code === 'auth/admin-restricted-operation') {
             const msg = "CRITICAL: Anonymous Authentication is disabled or restricted.\n\nTo fix this:\n1. Go to Firebase Console > Authentication > Sign-in method.\n2. Enable 'Anonymous'.\n3. If it's already enabled, check your Google Cloud Console API Key restrictions and ensure 'Identity Toolkit API' is allowed.\n4. Refresh this app.";
-            WebApp.showAlert(msg);
+            showAlert(msg);
           } else {
-            WebApp.showAlert("Authentication Error: " + err.message);
+            showAlert("Authentication Error: " + err.message);
           }
           setIsAuthReady(true);
         });
@@ -1946,6 +1952,19 @@ const App = () => {
       if (snapshot.exists()) {
         const gameData = snapshot.data();
         setPlayers(gameData.players || []);
+        
+        // If status changed to drawing and we are not already drawing, start local animation
+        if (gameData.status === 'drawing' && status === 'waiting') {
+          // Use the shared parameters if available
+          const remoteStartPos = gameData.startPos || { x: 50, y: 50 };
+          const remoteSpeed = gameData.speed || 45;
+          const remoteAngle = gameData.angle || 0;
+          
+          // Trigger local animation with remote parameters
+          // We'll need to adjust runDrawSequence to accept these
+          startRemoteAnimation(remoteStartPos, remoteSpeed, remoteAngle);
+        }
+
         setStatus(gameData.status || 'waiting');
         setWinner(gameData.winner || null);
         if (gameData.status === 'winner' && gameData.winner) {
@@ -1956,7 +1975,38 @@ const App = () => {
       handleFirestoreError(error, OperationType.GET, 'games/current');
     });
     return () => unsubscribe();
-  }, [isAuthReady]);
+  }, [isAuthReady, status]);
+
+  const startRemoteAnimation = (startPos: any, speed: number, angle: number) => {
+    setStatus('drawing');
+    setSelectorPos(startPos); 
+    setIsAiming(true); 
+    setIsZoomed(false);
+    angleRef.current = angle;
+    
+    let start = Date.now();
+    const spin = () => {
+      const elapsed = Date.now() - start;
+      if (elapsed < 1600) { 
+        angleRef.current = (angleRef.current + speed) % 360; 
+        setSelectorAngle(angleRef.current); 
+        requestAnimationFrame(spin); 
+      } else if (speed > 0.1) { 
+        speed *= 0.95; 
+        angleRef.current = (angleRef.current + speed) % 360; 
+        setSelectorAngle(angleRef.current); 
+        requestAnimationFrame(spin); 
+      } else { 
+        setTimeout(() => { 
+          setIsAiming(false); 
+          setTimeout(() => { 
+            shootPuck(startPos, angleRef.current); 
+          }, 350); 
+        }, 800); 
+      }
+    };
+    requestAnimationFrame(spin);
+  };
 
   // Test Connection
   useEffect(() => {
@@ -2148,51 +2198,83 @@ const App = () => {
     return () => clearInterval(timer);
   }, [status, persistentWinner]);
 
+  // Game Timer Logic
   useEffect(() => {
-    if (status === 'waiting' && timeLeft < 15 && timeLeft > 1) {
-      // Bot logic removed
+    if (status === 'waiting' && players.length >= 2 && timeLeft === 0) {
+      setTimeLeft(15);
     }
-  }, [timeLeft, status]);
+  }, [status, players.length, timeLeft]);
 
   useEffect(() => {
-    if (status === 'waiting' && players.length >= 2) {
-      if (timeLeft === 0) setTimeLeft(15);
+    if (status === 'waiting' && players.length >= 2 && timeLeft > 0) {
       const t = setInterval(() => {
-        setTimeLeft((prev) => {
+        setTimeLeft(prev => {
           if (prev <= 1) {
-            clearInterval(t);
             runDrawSequence();
             return 0;
-          } return prev - 1;
+          }
+          return prev - 1;
         });
       }, 1000);
       return () => clearInterval(t);
-    } else if (status === 'waiting') {
+    } else if (status === 'waiting' && players.length < 2) {
       setTimeLeft(0);
     }
-  }, [status, players.length, timeLeft === 0]);
+  }, [status, players.length >= 2, timeLeft > 0]);
 
-  const runDrawSequence = async () => {
-    if (status !== 'waiting') return;
+  // Auto-bot if waiting alone
+  useEffect(() => {
+    if (status === 'waiting' && players.length === 1) {
+      const t = setTimeout(() => {
+        if (status === 'waiting' && players.length === 1) {
+          addBid(10000, false, { 
+            id: 'bot_auto', 
+            name: 'DuckMaster', 
+            avatar: 'https://picsum.photos/seed/duck/100/100' 
+          });
+        }
+      }, 15000);
+      return () => clearTimeout(t);
+    }
+  }, [status, players.length]);
+
+  const runDrawSequence = async (isRemote: boolean = false) => {
+    if (status !== 'waiting' && !isRemote) return;
     
+    let startPos = { x: 30 + Math.random() * 40, y: 30 + Math.random() * 40 };
+    let speed = 40 + Math.random() * 10;
+    let angle = Math.random() * 360;
+
     // Try to claim the draw start in Firestore
-    if (user) {
+    if (!isRemote && user) {
       try {
-        await updateDoc(doc(db, 'games', 'current'), {
-          status: 'drawing'
+        const gameRef = doc(db, 'games', 'current');
+        const gameSnap = await getDoc(gameRef);
+        if (!gameSnap.exists() || gameSnap.data().status !== 'waiting') return;
+
+        // Pre-calculate winner to ensure everyone sees the same result
+        const result = simulateWinner(startPos, angle);
+        
+        await updateDoc(gameRef, {
+          status: 'drawing',
+          startPos,
+          speed,
+          angle,
+          winner: result
         });
       } catch (error) {
-        // If someone else already started it, onSnapshot will pick it up
+        console.error("Error starting draw:", error);
         return;
       }
     }
 
+    // If remote, we should ideally get startPos, speed, angle from Firestore
+    // But for now, let's just ensure the animation starts
     setStatus('drawing');
-    const startPos = { x: 30 + Math.random() * 40, y: 30 + Math.random() * 40 };
     setSelectorPos(startPos); 
     setIsAiming(true); 
     setIsZoomed(false);
-    let speed = 40 + Math.random() * 10;
+    
     let start = Date.now();
     const spin = () => {
       const elapsed = Date.now() - start;
@@ -2206,10 +2288,37 @@ const App = () => {
         setSelectorAngle(angleRef.current); 
         requestAnimationFrame(spin); 
       } else { 
-        setTimeout(() => { setIsAiming(false); setTimeout(() => { shootPuck(startPos, angleRef.current); }, 350); }, 800); 
+        setTimeout(() => { 
+          setIsAiming(false); 
+          setTimeout(() => { 
+            shootPuck(startPos, angleRef.current); 
+          }, 350); 
+        }, 800); 
       }
     };
     requestAnimationFrame(spin);
+  };
+
+  const simulateWinner = (startPos: any, finalAngle: number) => {
+    const rad = (finalAngle * Math.PI) / 180;
+    let x = startPos.x;
+    let y = startPos.y;
+    let vx = Math.sin(rad) * 8.5;
+    let vy = -Math.cos(rad) * 8.5;
+    const friction = 0.984;
+    const bounce = 0.7;
+    const radius = 2;
+
+    while (Math.sqrt(vx * vx + vy * vy) > 0.03) {
+      vx *= friction; vy *= friction;
+      x += vx; y += vy;
+      const min = radius, max = 100 - radius;
+      if (x < min) { x = min; vx *= -bounce; } else if (x > max) { x = max; vx *= -bounce; }
+      if (y < min) { y = min; vy *= -bounce; } else if (y > max) { y = max; vy *= -bounce; }
+    }
+    
+    const area = findOwnerAt(x, y);
+    return area || players[0];
   };
 
   const shootPuck = (startPos, finalAngle) => {
@@ -2342,7 +2451,7 @@ const App = () => {
     if (cleanAmt < 1) return;
 
     if (isMe && myBalance < cleanAmt) {
-      WebApp.showAlert("Insufficient DUCK balance!");
+      showAlert("Insufficient DUCK balance!");
       return;
     }
     
@@ -2357,25 +2466,20 @@ const App = () => {
     const n = isMe ? (tgUser ? `@${tgUser.username || tgUser.first_name}` : 'User') : bot.name;
     const a = isMe ? (tgUser?.photo_url || DEFAULT_AVATAR) : bot.avatar;
     
+    const uid = isMe ? user?.uid : (bot ? bot.id : `bot_${Date.now()}`);
+
+    if (!uid) return;
+
+    // Optimistic local update
     if (isMe) {
       setMyBalance(prev => Math.max(0, prev - finalAmt));
-      if (user) {
-        try {
-          await updateDoc(doc(db, 'users', user.uid), {
-            balance: increment(-finalAmt),
-            volume: increment(finalAmt),
-            spinsCount: increment(1)
-          });
-        } catch (error) {
-          handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
-        }
-      }
     }
 
     try {
       const gameRef = doc(db, 'games', 'current');
       
       await runTransaction(db, async (transaction) => {
+        // 1. Get Game State
         const gameSnap = await transaction.get(gameRef);
         let currentPlayers = [];
         let currentPot = 0;
@@ -2388,23 +2492,42 @@ const App = () => {
           currentStatus = data.status || 'waiting';
         }
 
-        // If game is no longer waiting, abort bid
         if (currentStatus !== 'waiting') {
           throw new Error("Game already started");
         }
 
-        const existingIdx = currentPlayers.findIndex(p => p.username === n);
+        // 2. Get User Data from DB (if isMe)
+        let freshUserData = null;
+        const userRef = isMe ? doc(db, 'users', user.uid) : null;
+        if (isMe && userRef) {
+          const userSnap = await transaction.get(userRef);
+          if (!userSnap.exists()) throw new Error("User not found");
+          freshUserData = userSnap.data();
+          if (freshUserData.balance < finalAmt) {
+            throw new Error("Insufficient balance in DB");
+          }
+          // Update User Balance in same transaction
+          transaction.update(userRef, {
+            balance: increment(-finalAmt),
+            volume: increment(finalAmt),
+            spinsCount: increment(1)
+          });
+        }
+
+        // 3. Update Players Array
+        const existingIdx = currentPlayers.findIndex(p => p.uid === uid);
         if (existingIdx > -1) {
           currentPlayers[existingIdx].bet += finalAmt;
-          if (isMe) {
-            currentPlayers[existingIdx].selectedFrame = userData?.selectedFrame || 'none';
-            currentPlayers[existingIdx].uid = user.uid;
-            currentPlayers[existingIdx].hasBoughtWithTon = userData?.hasBoughtWithTon || false;
+          if (isMe && freshUserData) {
+            currentPlayers[existingIdx].selectedFrame = freshUserData.selectedFrame || 'none';
+            currentPlayers[existingIdx].hasBoughtWithTon = freshUserData.hasBoughtWithTon || false;
+            currentPlayers[existingIdx].username = n; // Sync username
+            currentPlayers[existingIdx].avatar = a; // Sync avatar
           }
         } else if (currentPlayers.length < 15) {
           const pal = PLAYER_PALETTE[currentPlayers.length % PLAYER_PALETTE.length];
           const newPlayer = { 
-            uid: isMe ? user.uid : (bot ? bot.id : `bot_${Date.now()}`),
+            uid: uid,
             username: n, 
             avatar: a, 
             bet: finalAmt, 
@@ -2413,12 +2536,13 @@ const App = () => {
             accentColor: pal.accent, 
             isMe, 
             id: Date.now() + Math.random(),
-            selectedFrame: isMe ? (userData?.selectedFrame || 'none') : 'none',
-            hasBoughtWithTon: isMe ? (userData?.hasBoughtWithTon || false) : false
+            selectedFrame: isMe ? (freshUserData?.selectedFrame || 'none') : 'none',
+            hasBoughtWithTon: isMe ? (freshUserData?.hasBoughtWithTon || false) : false
           };
           currentPlayers.push(newPlayer);
         }
 
+        // 4. Update Game State
         transaction.set(gameRef, {
           players: currentPlayers,
           totalPot: currentPot + finalAmt,
@@ -2427,20 +2551,19 @@ const App = () => {
         }, { merge: true });
       });
     } catch (error) {
-      if (error instanceof Error && error.message === "Game already started") {
-        // Refund local balance if bid failed because game started
-        if (isMe) {
-          setMyBalance(prev => prev + finalAmt);
-          if (user) {
-            updateDoc(doc(db, 'users', user.uid), {
-              balance: increment(finalAmt),
-              volume: increment(-finalAmt),
-              spinsCount: increment(-1)
-            }).catch(console.error);
-          }
+      console.error("Bid Error:", error);
+      // Rollback local balance if failed
+      if (isMe) {
+        setMyBalance(prev => prev + finalAmt);
+      }
+      if (error instanceof Error) {
+        if (error.message === "Game already started") {
+          showAlert("Game already started! Your bid was refunded.");
+        } else if (error.message === "Insufficient balance in DB") {
+          showAlert("Insufficient balance!");
+        } else {
+          showAlert("Failed to place bid. Please try again.");
         }
-      } else {
-        handleFirestoreError(error, OperationType.WRITE, 'games/current');
       }
     }
   };
@@ -2564,7 +2687,7 @@ const App = () => {
     setIsClaimingWelcome(true);
     const timeoutId = setTimeout(() => {
       setIsClaimingWelcome(false);
-      WebApp.showAlert("Claiming timed out. Please check your connection and try again.");
+      showAlert("Claiming timed out. Please check your connection and try again.");
     }, 15000);
 
     try {
@@ -2583,14 +2706,14 @@ const App = () => {
       setTimeout(() => {
         setShowWelcomePopup(false);
         setIsClaimingWelcome(false);
-        WebApp.showAlert(`Welcome bonus of ${formatCurrency(welcomeReward)} DUCK claimed successfully!`);
+        showAlert(`Welcome bonus of ${formatCurrency(welcomeReward)} DUCK claimed successfully!`);
       }, 500);
       
     } catch (error) {
       console.error("Error claiming welcome bonus:", error);
       clearTimeout(timeoutId);
       setIsClaimingWelcome(false);
-      WebApp.showAlert("Error claiming bonus. Please try again later.");
+      showAlert("Error claiming bonus. Please try again later.");
     }
   };
 
@@ -2601,7 +2724,7 @@ const App = () => {
     
     const currentLevel = userMiner.level;
     if (currentLevel >= miner.maxLevel) {
-      WebApp.showAlert("Maximum level reached!");
+      showAlert("Maximum level reached!");
       return;
     }
     
@@ -2610,7 +2733,7 @@ const App = () => {
     const balance = currency === 'duck' ? myBalance : tonBalance;
 
     if (balance < amount) {
-      WebApp.showAlert(`Insufficient ${currency.toUpperCase()} balance!`);
+      showAlert(`Insufficient ${currency.toUpperCase()} balance!`);
       return;
     }
 
@@ -2637,7 +2760,7 @@ const App = () => {
           setIsUpgradePopupOpen(false);
         } catch (e) {
           console.error("Error upgrading:", e);
-          WebApp.showAlert("Failed to upgrade. Please try again.");
+          showAlert("Failed to upgrade. Please try again.");
         }
       }
     });
@@ -2645,18 +2768,18 @@ const App = () => {
 
   const handlePurchaseMiner = async (miner: any) => {
     if (!user || !userData) {
-      WebApp.showAlert("User data not loaded. Please wait a moment.");
+      showAlert("User data not loaded. Please wait a moment.");
       return;
     }
     
     const isOwned = !!userData?.miners?.[miner.id];
     if (isOwned) {
-      WebApp.showAlert("You already own this miner!");
+      showAlert("You already own this miner!");
       return;
     }
     
     if (tonBalance < miner.priceTon) {
-      WebApp.showAlert(`Insufficient TON balance! You need ${miner.priceTon} TON to purchase ${miner.name}.`);
+      showAlert(`Insufficient TON balance! You need ${miner.priceTon} TON to purchase ${miner.name}.`);
       return;
     }
 
@@ -2692,7 +2815,7 @@ const App = () => {
           });
         } catch (e) {
           console.error("Error purchasing miner:", e);
-          WebApp.showAlert("Failed to purchase. Please try again.");
+          showAlert("Failed to purchase. Please try again.");
         }
       }
     });
@@ -2732,7 +2855,7 @@ const App = () => {
         if (isAdmin) {
           setIsAdminPanelOpen(true);
         } else {
-          WebApp.showAlert("Access denied: You do not have administrator privileges.");
+          showAlert("Access denied: You do not have administrator privileges.");
         }
         return 0;
       }
@@ -2815,7 +2938,7 @@ const App = () => {
 
   const handleCopyReferral = () => {
     navigator.clipboard.writeText(`t.me/GiftPhaseBot?start=${user?.uid || '6686954447'}`);
-    WebApp.showAlert("Referral link copied to clipboard!");
+    showAlert("Referral link copied to clipboard!");
   };
 
   const handleShare = () => {
@@ -2943,7 +3066,7 @@ const App = () => {
         setMyBalance(prev => prev + accumulatedDuck);
         setTonBalance(prev => prev + accumulatedTon);
         WebApp.HapticFeedback.notificationOccurred('success');
-        WebApp.showAlert(`Successfully claimed ${formatCurrency(accumulatedDuck)} DUCK and ${accumulatedTon.toFixed(4)} TON!`);
+        showAlert(`Successfully claimed ${formatCurrency(accumulatedDuck)} DUCK and ${accumulatedTon.toFixed(4)} TON!`);
       } catch (e) {
         console.error("Error claiming mining:", e);
       }
@@ -2958,7 +3081,7 @@ const App = () => {
           [`miners.${miner.id}.boostStartedAt`]: now,
         });
         WebApp.HapticFeedback.notificationOccurred('success');
-        WebApp.showAlert("2X Boost activated for 30 minutes!");
+        showAlert("2X Boost activated for 30 minutes!");
       } catch (e) {
         console.error("Error boosting:", e);
       }
@@ -3311,7 +3434,7 @@ const App = () => {
         if (checkAchievementCriteria(task)) {
           handleTaskClick(task.id);
         } else {
-          WebApp.showAlert(`Requirement not met: ${task.requiredCount} needed.`);
+          showAlert(`Requirement not met: ${task.requiredCount} needed.`);
         }
         return;
       }
@@ -3347,12 +3470,12 @@ const App = () => {
               setVerifyingTaskId(null);
               WebApp.HapticFeedback.notificationOccurred('success');
             } else {
-              WebApp.showAlert(data.error || "Verification failed. Please make sure you have joined the channel/group.");
+              showAlert(data.error || "Verification failed. Please make sure you have joined the channel/group.");
               setVerifyingTaskId(null);
             }
           } catch (error) {
             console.error("Verification error:", error);
-            WebApp.showAlert("Verification service unavailable. Try again later.");
+            showAlert("Verification service unavailable. Try again later.");
             setVerifyingTaskId(null);
           }
         }
@@ -3928,7 +4051,7 @@ const App = () => {
                         <button 
                           onClick={async () => {
                             if (tonBalance < frame.price) {
-                              WebApp.showAlert("Insufficient TON balance!");
+                              showAlert("Insufficient TON balance!");
                               return;
                             }
                             try {
